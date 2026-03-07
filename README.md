@@ -32,7 +32,7 @@ npm install -g mspec
 
 ## How to Use
 
-The workflow follows a simple three-step loop: **Initialize -> Plan -> Apply**.
+The workflow follows a simple three-step loop: **Initialize -> Plan -> Implement**.
 
 ### Step 1: Initialize the Project
 Run this command in the root of your project:
@@ -41,7 +41,7 @@ npx mspec init
 ```
 - It will prompt you for your preferred AI agent (Claude, Gemini, Cursor, etc.).
 - It will create the `.mspec/specs/` and `.mspec/tasks/` directories.
-- It will automatically inject custom commands into your project (e.g., `.gemini/commands/mspec.plan.toml` or `.cursor/rules/mspec.apply.mdc`) so your AI agent natively understands the framework and provides autocomplete commands like `/mspec.spec`.
+- It will automatically inject custom commands into your project (e.g., `.gemini/commands/mspec.plan.toml` or `.cursor/rules/mspec.implement.mdc`) so your AI agent natively understands the framework and provides autocomplete commands like `/mspec.spec`.
 
 *(Note: After running `init`, you may need to restart your AI agent session so it can detect the new slash commands).*
 
@@ -73,8 +73,9 @@ Once the checklist is generated, hand the wheel over to the AI to orchestrate th
 
 **Command:**
 ```text
-/mspec.apply
+/mspec.implement
 ```
+- If you don't provide a spec name, the AI will ask you which spec you want to implement.
 - **Sub-Agent Delegation:** To prevent context bloat, the AI will read the first `- [ ]` task and delegate the actual coding to a sub-agent.
 - **Parallelization:** If tasks are independent (e.g., backend and frontend), it will spawn multiple sub-agents to execute them simultaneously!
 - **Empirical Verification:** The sub-agent will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
@@ -107,7 +108,7 @@ your-project/
 │   └── commands/
 │       ├── mspec.spec.toml
 │       ├── mspec.plan.toml
-│       └── mspec.apply.toml
+│       └── mspec.implement.toml
 ├── src/                           # Your actual code
 └── package.json
 ```
