@@ -33,12 +33,13 @@ export async function implementCommand(specName: string, options: { batch?: bool
   
   const executionPrompt = `> **mspec execution directive:**
 > Please read \`.mspec/tasks/${specName}.tasks.md\`. 
-> 1. Find the first incomplete task marked with \`- [ ]\`.
-> 2. Implement the requirements for that specific task.
-> 3. Verify your implementation (run tests/build).
-> 4. If successful, change the task to \`- [x]\` in the file.
-> 5. ${isBatch 
-      ? 'Continue to the next task until all tasks in the current phase are complete.' 
+> 1. Analyze the incomplete tasks marked with \`- [ ]\`.
+> 2. CRITICAL: Delegate the actual coding to a sub-agent to preserve your context.
+> 3. If tasks are independent (e.g., backend/frontend), run multiple sub-agents in parallel. Otherwise, pick the first task.
+> 4. Instruct the sub-agent to implement the task, empirically verify it (run tests/build), and fix errors autonomously.
+> 5. Once the sub-agent succeeds, change the task to \`- [x]\` in the file.
+> 6. ${isBatch 
+      ? 'Continue delegating the next task(s) until all tasks in the current phase are complete.' 
       : 'Stop and wait for my approval before moving to the next task.'}`;
 
   // 4. Output the prompt

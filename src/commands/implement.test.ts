@@ -99,7 +99,7 @@ describe('implementCommand', () => {
     const promptOutput = mockConsoleLog.mock.calls[1][0];
     
     expect(promptOutput).toContain('mspec execution directive:');
-    expect(promptOutput).toContain('Continue to the next task until all tasks');
+    expect(promptOutput).toContain('Continue delegating the next task(s) until all tasks');
   });
 
   it('should support nested spec names like feature/001-auth', async () => {

@@ -10,7 +10,7 @@ It is designed to work seamlessly alongside your favorite AI coding agents: Clau
 - **Token Efficient:** Uses a single `SPEC.md` for context instead of massive chat histories.
 - **Visual-First:** Encourages Mermaid.js diagrams over long, confusing paragraphs.
 - **Data Dictionaries:** Uses simple Markdown tables for data modeling instead of strict, unreadable JSON schemas.
-- **Agent Handoff:** You design the spec; the AI breaks down the tasks; the AI implements the tasks sequentially.
+- **Sub-Agent Orchestration:** It instructs your main AI agent to act as an orchestrator, delegating implementation to parallel sub-agents to preserve your context window.
 
 ---
 
@@ -27,8 +27,6 @@ npx mspec <command>
 ```bash
 npm install -g mspec
 ```
-
-*(Note: If you are cloning this repository locally for development, run `npm install`, then `npm run build`, and finally `npm link` to make the `mspec` command available globally on your machine).*
 
 ---
 
@@ -52,27 +50,35 @@ Use the native slash command in your AI agent to start drafting a specification.
 
 **Command:**
 ```text
-/mspec.spec Let's create a spec for a new authentication feature. Save it to .mspec/specs/001-auth.md. Include a markdown description, a mermaid sequence diagram for login, and a markdown data dictionary for the user object.
+/mspec.spec Let's create a spec for a new authentication feature.
 ```
-The AI will use the `mspec` standard to output a clean, visual-first specification file.
+- **Context Gathering:** The AI will automatically look at your existing codebase to understand your current architecture before answering.
+- **The Inquiry:** It will stop and ask you targeted questions about edge cases, data models, and logic.
+- **Drafting:** After you answer, it will generate a highly structured `.mspec/specs/001-auth.md` file featuring a Mermaid diagram and an Acceptance Criteria checklist.
+- It will output the file path for your review and wait for you to say **"Approved"** or **"LGTM"** before automatically offering the next command.
 
 ### Step 3: Scaffold the Plan
-Once you are happy with the `001-auth.md` spec, use the planning command to break it down.
+Once you are happy with the spec, use the planning command to break it down.
 
 **Command:**
 ```text
-/mspec.plan Read .mspec/specs/001-auth.md and break it down into a granular checklist in .mspec/tasks/001-auth.tasks.md
+/mspec.plan
 ```
-*(Alternatively, you can run `npx mspec plan 001-auth` in your terminal to scaffold the exact boilerplate, and then tell the AI to fill it out).*
+- If you don't provide a spec name, the AI will ask you which spec you want to plan.
+- **Sequencing:** The AI will read the spec and create a strict, logically sequenced checklist in `.mspec/tasks/001-auth.tasks.md` (Data -> Logic -> UI -> Edge Cases -> Automated Tests).
+- It will show you the exact file path so you can review the generated tasks and ask for your approval before proceeding.
 
 ### Step 4: Implement and Execute
-Once the checklist is generated, it's time to hand the wheel over to the AI to execute the tasks sequentially.
+Once the checklist is generated, hand the wheel over to the AI to orchestrate the implementation.
 
 **Command:**
 ```text
-/mspec.apply Please implement the tasks for 001-auth sequentially. Stop after each task for my review.
+/mspec.apply
 ```
-- *What the AI does:* It will read the `.tasks.md` file, pick the first unchecked `- [ ]` task, implement the code, run your tests, change the checkbox to `- [x]`, and then **stop** to wait for your review.
+- **Sub-Agent Delegation:** To prevent context bloat, the AI will read the first `- [ ]` task and delegate the actual coding to a sub-agent.
+- **Parallelization:** If tasks are independent (e.g., backend and frontend), it will spawn multiple sub-agents to execute them simultaneously!
+- **Empirical Verification:** The sub-agent will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
+- It will change the checkbox to `- [x]` and stop to wait for your review.
 
 #### Terminal Execution (Optional)
 If you prefer, you can use the terminal CLI to generate a strict execution prompt that you can paste to your AI:

@@ -1,6 +1,6 @@
 {
   "name": "mspec",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A minimalist Spec-Driven Development (SDD) toolkit for solo developers and AI agents",
   "main": "index.js",
   "scripts": {
