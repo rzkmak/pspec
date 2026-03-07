@@ -2,7 +2,7 @@
 
 > **A minimalist Spec-Driven Development (SDD) toolkit for solo developers and AI agents.**
 
-`mspec` is a lightweight alternative to heavy SDD frameworks like `spec-kit` or `get-shit-done`. It removes the "enterprise theater" (branch-per-feature, complex state files, and heavy daemon processes) and focuses strictly on **intent** (the Spec) and **execution** (the Tasks) using simple Markdown files.
+`mspec` is a lightweight alternative to heavy SDD frameworks. It removes the "enterprise theater" (branch-per-feature, complex state files, and heavy daemon processes) and focuses strictly on **intent** (the Spec) and **execution** (the Tasks) using simple Markdown files.
 
 It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, OpenCode, or Zed.
 
