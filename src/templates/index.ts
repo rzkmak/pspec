@@ -15,12 +15,21 @@ PHASE 0: CONTEXT GATHERING
 
 PHASE 1: INQUIRY
 2. DO NOT generate the specification file immediately.
-3. Ask the user 3-5 targeted questions to clarify the feature, incorporating any context you found in Phase 0. To build a strong spec, you must extract:
+3. Ask the user between 3 to 15 targeted questions to clarify the feature, depending on the feature's ambiguity. Incorporate any context you found in Phase 0. 
+4. CRITICAL: Format EVERY question as a multiple-choice selection. Provide exactly 2 recommended options (weighing pros and cons based on the current codebase) and 1 option for a custom answer. 
+   Use this exact format for every question:
+   
+   Q[Number]: [Your Question]
+   Option A: [Recommendation 1] (Pros: ... Cons: ...)
+   Option B: [Recommendation 2] (Pros: ... Cons: ...)
+   Option C: (Custom, please type your answer)
+
+5. To build a strong spec, your questions must extract:
    - Core Objective: What is the exact goal and business logic?
    - Edge Cases & Error Handling: What happens on failure, empty states, or invalid input?
    - Data Structures: What exact fields, types, and constraints are required?
    - Dependencies: Does this rely on external APIs, existing UI components, or specific libraries?
-4. Wait for the user to answer. Iterate if necessary until ambiguity is eliminated.
+6. Wait for the user to answer (e.g., "Q1: A, Q2: C - use Redis instead"). Iterate if necessary until ambiguity is eliminated.
 
 PHASE 2: DRAFTING
 5. Generate the spec file in .mspec/specs/ using the exact filename requested or a logical slug (e.g., 001-auth.md).
