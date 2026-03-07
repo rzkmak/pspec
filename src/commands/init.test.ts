@@ -29,15 +29,15 @@ describe('initCommand', () => {
   });
 
   const providers = [
-    { agent: 'claude', expectedFile: '.claude/commands/mspec.md' },
-    { agent: 'gemini', expectedFile: '.gemini/commands/mspec.toml' },
-    { agent: 'cursor', expectedFile: '.cursor/rules/mspec.mdc' },
-    { agent: 'opencode', expectedFile: '.opencode/commands/mspec.md' },
-    { agent: 'zed', expectedFile: '.mspec/INSTRUCTIONS.md' },
-    { agent: 'generic', expectedFile: '.mspec/INSTRUCTIONS.md' }
+    { agent: 'claude', expectedFiles: ['.claude/commands/mspec.spec.md', '.claude/commands/mspec.plan.md', '.claude/commands/mspec.apply.md'] },
+    { agent: 'gemini', expectedFiles: ['.gemini/commands/mspec.spec.toml', '.gemini/commands/mspec.plan.toml', '.gemini/commands/mspec.apply.toml'] },
+    { agent: 'cursor', expectedFiles: ['.cursor/rules/mspec.spec.mdc', '.cursor/rules/mspec.plan.mdc', '.cursor/rules/mspec.apply.mdc'] },
+    { agent: 'opencode', expectedFiles: ['.opencode/commands/mspec.spec.md', '.opencode/commands/mspec.plan.md', '.opencode/commands/mspec.apply.md'] },
+    { agent: 'zed', expectedFiles: ['.mspec/INSTRUCTIONS.md'] },
+    { agent: 'generic', expectedFiles: ['.mspec/INSTRUCTIONS.md'] }
   ];
 
-  providers.forEach(({ agent, expectedFile }) => {
+  providers.forEach(({ agent, expectedFiles }) => {
     it(`should initialize the .mspec environment for ${agent}`, async () => {
       mockPrompt.mockResolvedValueOnce({ agent });
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -53,8 +53,10 @@ describe('initCommand', () => {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
       expect(config.agent).toBe(agent);
 
-      const integrationPath = path.join(tmpDir, expectedFile);
-      expect(fs.existsSync(integrationPath)).toBe(true);
+      for (const expectedFile of expectedFiles) {
+        const integrationPath = path.join(tmpDir, expectedFile);
+        expect(fs.existsSync(integrationPath)).toBe(true);
+      }
     });
   });
 
