@@ -19,7 +19,7 @@ It is designed to work seamlessly alongside your favorite AI coding agents: Clau
 We recommend running `mspec` directly via `npx` so you always get the freshest, most up-to-date prompts for your AI agents when initializing a new project.
 
 ```bash
-npx mspec init
+npx mspec@latest init
 ```
 
 ---
@@ -31,11 +31,12 @@ The workflow follows a simple three-step loop: **Initialize -> Plan -> Implement
 ### Step 1: Initialize the Project
 Run this command in the root of your project:
 ```bash
-npx mspec init
+npx mspec@latest init
 ```
 - It will prompt you for your preferred AI agent (Claude, Gemini, Cursor, etc.).
 - It will create the `.mspec/specs/` and `.mspec/tasks/` directories.
 - It will automatically inject custom commands into your project (e.g., `.gemini/commands/mspec.plan.toml` or `.cursor/rules/mspec.implement.mdc`) so your AI agent natively understands the framework and provides autocomplete commands like `/mspec.spec`.
+- **Note:** If you already have `.mspec` in your project, running this command will **update** your local AI instructions to the latest version without overwriting your specs or tasks.
 
 *(Note: After running `init`, you may need to restart your AI agent session so it can detect the new slash commands).*
 

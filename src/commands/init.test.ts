@@ -60,15 +60,33 @@ describe('initCommand', () => {
     });
   });
 
-  it('should skip initialization if .mspec directory already exists', async () => {
+  it('should update integration files if .mspec directory already exists', async () => {
     const mspecDir = path.join(tmpDir, '.mspec');
     fs.mkdirSync(mspecDir);
+    fs.mkdirSync(path.join(mspecDir, 'specs'));
+    fs.mkdirSync(path.join(mspecDir, 'tasks'));
+    fs.writeFileSync(path.join(mspecDir, 'mspec.json'), JSON.stringify({ agent: 'cursor' }));
 
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    mockPrompt.mockRejectedValueOnce(new Error('Should not prompt'));
+
     await initCommand();
 
-    expect(fs.existsSync(path.join(mspecDir, 'specs'))).toBe(false);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Initialization skipped.'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Existing .mspec directory found. Updating integration files...'));
+    expect(fs.existsSync(path.join(tmpDir, '.cursor/rules/mspec.spec.mdc'))).toBe(true);
+  });
+
+  it('should prompt if .mspec directory exists but mspec.json is missing or invalid', async () => {
+    const mspecDir = path.join(tmpDir, '.mspec');
+    fs.mkdirSync(mspecDir);
+    
+    mockPrompt.mockResolvedValueOnce({ agent: 'gemini' });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+    await initCommand();
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Existing .mspec directory found. Updating integration files...'));
+    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
   });
 
   it('should handle prompt cancellation gracefully', async () => {
