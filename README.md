@@ -2,7 +2,7 @@
 
 > **A minimalist Spec-Driven Development (SDD) toolkit for solo developers and AI agents.**
 
-`mspec` is a lightweight alternative to heavy SDD frameworks. It removes the "enterprise theater" (branch-per-feature, complex state files, and heavy daemon processes) and focuses strictly on **intent** (the Spec) and **execution** (the Tasks) using simple Markdown files.
+`mspec` is a lightweight alternative to heavy SDD frameworks like `spec-kit` or `get-shit-done`. It removes the "enterprise theater" (branch-per-feature, complex state files, and heavy daemon processes) and focuses strictly on **intent** (the Spec) and **execution** (the Tasks) using simple Markdown files.
 
 It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, OpenCode, or Zed.
 
@@ -34,7 +34,7 @@ npm install -g mspec
 
 ## How to Use
 
-The workflow follows a simple three-step loop: **Initialize -> Plan -> Implement**.
+The workflow follows a simple three-step loop: **Initialize -> Plan -> Apply**.
 
 ### Step 1: Initialize the Project
 Run this command in the root of your project:
@@ -43,36 +43,44 @@ npx mspec init
 ```
 - It will prompt you for your preferred AI agent (Claude, Gemini, Cursor, etc.).
 - It will create the `.mspec/specs/` and `.mspec/tasks/` directories.
-- It will automatically inject a custom command/instruction file into your project (e.g., `.gemini/commands/mspec.toml` or `.cursor/rules/mspec.mdc`) so your AI agent understands the framework.
+- It will automatically inject custom commands into your project (e.g., `.gemini/commands/mspec.plan.toml` or `.cursor/rules/mspec.apply.mdc`) so your AI agent natively understands the framework and provides autocomplete commands like `/mspec.spec`.
+
+*(Note: After running `init`, you may need to restart your AI agent session so it can detect the new slash commands).*
 
 ### Step 2: The Inquiry (Creating a Spec)
-Talk to your AI agent and ask it to draft a specification using the `mspec` standard.
+Use the native slash command in your AI agent to start drafting a specification.
 
-**Example Prompt to your AI:**
-> "Let's create a spec for a new authentication feature. Save it to `.mspec/specs/001-auth.md`. Include a markdown description, a mermaid sequence diagram for login, and a markdown data dictionary for the user object."
+**Command:**
+```text
+/mspec.spec Let's create a spec for a new authentication feature. Save it to .mspec/specs/001-auth.md. Include a markdown description, a mermaid sequence diagram for login, and a markdown data dictionary for the user object.
+```
+The AI will use the `mspec` standard to output a clean, visual-first specification file.
 
 ### Step 3: Scaffold the Plan
-Once you are happy with the `001-auth.md` spec, run:
-```bash
-npx mspec plan 001-auth
+Once you are happy with the `001-auth.md` spec, use the planning command to break it down.
+
+**Command:**
+```text
+/mspec.plan Read .mspec/specs/001-auth.md and break it down into a granular checklist in .mspec/tasks/001-auth.tasks.md
 ```
-- This validates that the spec exists.
-- It generates a boilerplate `.mspec/tasks/001-auth.tasks.md` file containing strict instructions for the AI.
-- **Next Action:** Tell your AI agent: *"Please read the spec and fill out the tasks file for 001-auth."* The AI will break the spec down into granular checkboxes.
+*(Alternatively, you can run `npx mspec plan 001-auth` in your terminal to scaffold the exact boilerplate, and then tell the AI to fill it out).*
 
 ### Step 4: Implement and Execute
-Once the checklist is generated, it's time to hand the wheel over to the AI.
-```bash
-npx mspec implement 001-auth
-```
-- This command analyzes the task list.
-- It outputs a highly structured prompt to your terminal. 
-- **Next Action:** Copy the outputted prompt and paste it to your AI agent. 
-  - *What the AI does:* It will read the `.tasks.md` file, pick the first unchecked `- [ ]` task, implement the code, run your tests, change the checkbox to `- [x]`, and then **stop** to wait for your review.
+Once the checklist is generated, it's time to hand the wheel over to the AI to execute the tasks sequentially.
 
-#### Batch Execution
-If you trust the AI and want it to burn through the whole checklist without stopping for your approval between tasks, use the `--batch` flag:
+**Command:**
+```text
+/mspec.apply Please implement the tasks for 001-auth sequentially. Stop after each task for my review.
+```
+- *What the AI does:* It will read the `.tasks.md` file, pick the first unchecked `- [ ]` task, implement the code, run your tests, change the checkbox to `- [x]`, and then **stop** to wait for your review.
+
+#### Terminal Execution (Optional)
+If you prefer, you can use the terminal CLI to generate a strict execution prompt that you can paste to your AI:
 ```bash
+# Generate the prompt for one-by-one execution
+npx mspec implement 001-auth
+
+# Generate the prompt for batch execution (don't stop for review)
 npx mspec implement 001-auth --batch
 ```
 
@@ -89,6 +97,11 @@ your-project/
 │   │   └── 001-auth.md            # The "Intent" (Markdown/Mermaid)
 │   └── tasks/
 │       └── 001-auth.tasks.md      # The "Execution" (Checklists)
+├── .gemini/                       # (Or .claude / .cursor depending on your agent)
+│   └── commands/
+│       ├── mspec.spec.toml
+│       ├── mspec.plan.toml
+│       └── mspec.apply.toml
 ├── src/                           # Your actual code
 └── package.json
 ```
