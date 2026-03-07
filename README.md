@@ -16,16 +16,10 @@ It is designed to work seamlessly alongside your favorite AI coding agents: Clau
 
 ## Installation
 
-You can run `mspec` directly via `npx` (recommended) or install it globally.
+We recommend running `mspec` directly via `npx` so you always get the freshest, most up-to-date prompts for your AI agents when initializing a new project.
 
-### Running via npx (No install required)
 ```bash
-npx mspec <command>
-```
-
-### Global Installation
-```bash
-npm install -g mspec
+npx mspec init
 ```
 
 ---
@@ -53,9 +47,19 @@ Use the native slash command in your AI agent to start drafting a specification.
 /mspec.spec Let's create a spec for a new authentication feature.
 ```
 - **Context Gathering:** The AI will automatically look at your existing codebase to understand your current architecture before answering.
-- **The Inquiry:** It will stop and ask you targeted questions about edge cases, data models, and logic.
-- **Drafting:** After you answer, it will generate a highly structured `.mspec/specs/001-auth.md` file featuring a Mermaid diagram and an Acceptance Criteria checklist.
-- It will output the file path for your review and wait for you to say **"Approved"** or **"LGTM"** before automatically offering the next command.
+- **The Inquiry:** It will not guess. Instead, it will ask you multiple-choice questions to define the core logic, edge cases, and data models. 
+  
+  *Example Interaction:*
+  > **AI:** Q1: How should we handle session storage?
+  > Option A: JWT in HTTP-only cookies (Pros: Secure against XSS. Cons: Harder to invalidate).
+  > Option B: Redis-backed sessions (Pros: Easy to revoke. Cons: Requires setting up Redis).
+  > Option C: (Custom, please type your answer)
+  >
+  > **You:** Q1: A
+  
+- **Approval Checkpoint 1:** After you answer, the AI will ask: *"Are you ready for me to draft the specification based on these answers? (Please reply 'Approved' or 'LGTM')"*
+- **Drafting:** Once approved, it will generate a highly structured `.mspec/specs/001-auth.md` file featuring a Mermaid diagram and an Acceptance Criteria checklist.
+- **Approval Checkpoint 2:** It will output the file path for your review and wait for you to say **"Approved"** or **"LGTM"** again before automatically offering the next command.
 
 ### Step 3: Scaffold the Plan
 Once you are happy with the spec, use the planning command to break it down.
