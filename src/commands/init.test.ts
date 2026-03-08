@@ -39,7 +39,7 @@ describe('initCommand', () => {
 
   providers.forEach(({ agent, expectedFiles }) => {
     it(`should initialize the .mspec environment for ${agent}`, async () => {
-      mockPrompt.mockResolvedValueOnce({ agent });
+      mockPrompt.mockResolvedValueOnce({ agents: [agent] });
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       
       await initCommand();
@@ -51,7 +51,7 @@ describe('initCommand', () => {
       const configPath = path.join(tmpDir, '.mspec/mspec.json');
       expect(fs.existsSync(configPath)).toBe(true);
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      expect(config.agent).toBe(agent);
+      expect(config.agents).toContain(agent);
 
       for (const expectedFile of expectedFiles) {
         const integrationPath = path.join(tmpDir, expectedFile);
@@ -60,33 +60,90 @@ describe('initCommand', () => {
     });
   });
 
-  it('should update integration files if .mspec directory already exists', async () => {
+  it('should initialize multiple agents at once', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['claude', 'gemini'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    const configPath = path.join(tmpDir, '.mspec/mspec.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(config.agents).toEqual(['claude', 'gemini']);
+
+    expect(fs.existsSync(path.join(tmpDir, '.claude/commands/mspec.spec.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
+  });
+
+  it('should update and prompt even if .mspec directory already exists', async () => {
     const mspecDir = path.join(tmpDir, '.mspec');
     fs.mkdirSync(mspecDir);
     fs.mkdirSync(path.join(mspecDir, 'specs'));
     fs.mkdirSync(path.join(mspecDir, 'tasks'));
-    fs.writeFileSync(path.join(mspecDir, 'mspec.json'), JSON.stringify({ agent: 'cursor' }));
+    fs.writeFileSync(path.join(mspecDir, 'mspec.json'), JSON.stringify({ agents: ['cursor'] }));
 
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-    mockPrompt.mockRejectedValueOnce(new Error('Should not prompt'));
+    mockPrompt.mockResolvedValueOnce({ agents: ['cursor', 'gemini'] });
 
     await initCommand();
 
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Existing .mspec directory found. Updating integration files...'));
+    const configPath = path.join(tmpDir, '.mspec/mspec.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(config.agents).toEqual(['cursor', 'gemini']);
+    
     expect(fs.existsSync(path.join(tmpDir, '.cursor/rules/mspec.spec.mdc'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
   });
 
-  it('should prompt if .mspec directory exists but mspec.json is missing or invalid', async () => {
+  it('should handle legacy "agent" field and migrate to "agents"', async () => {
     const mspecDir = path.join(tmpDir, '.mspec');
     fs.mkdirSync(mspecDir);
-    
-    mockPrompt.mockResolvedValueOnce({ agent: 'gemini' });
+    fs.writeFileSync(path.join(mspecDir, 'mspec.json'), JSON.stringify({ agent: 'claude' }));
+
+    mockPrompt.mockResolvedValueOnce({ agents: ['claude', 'gemini'] });
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
     await initCommand();
 
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Existing .mspec directory found. Updating integration files...'));
+    const configPath = path.join(tmpDir, '.mspec/mspec.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(config.agents).toEqual(['claude', 'gemini']);
+    expect(config.agent).toBeUndefined();
+  });
+
+  it('should support running init multiple times to add/remove agents', async () => {
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+    // 1st init: Select 'claude'
+    mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+    await initCommand();
+    
+    let config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
+    expect(config.agents).toEqual(['claude']);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/commands/mspec.spec.md'))).toBe(true);
+
+    // 2nd init: Add 'gemini', 'claude' should be pre-selected (enabled: true)
+    mockPrompt.mockResolvedValueOnce({ agents: ['claude', 'gemini'] });
+    await initCommand();
+
+    // Verify prompt was called with 'claude' enabled
+    expect(mockPrompt).toHaveBeenLastCalledWith(expect.objectContaining({
+      choices: expect.arrayContaining([
+        expect.objectContaining({ name: 'claude', enabled: true }),
+        expect.objectContaining({ name: 'gemini', enabled: false })
+      ])
+    }));
+
+    config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
+    expect(config.agents).toEqual(['claude', 'gemini']);
     expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
+
+    // 3rd init: Remove 'claude', keep 'gemini'
+    mockPrompt.mockResolvedValueOnce({ agents: ['gemini'] });
+    await initCommand();
+
+    config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
+    expect(config.agents).toEqual(['gemini']);
+    // Note: mspec currently doesn't delete files of removed agents, which is fine for now
   });
 
   it('should handle prompt cancellation gracefully', async () => {
@@ -100,7 +157,7 @@ describe('initCommand', () => {
   });
   
   it('should handle missing template gracefully', async () => {
-    mockPrompt.mockResolvedValueOnce({ agent: 'unknown-agent' });
+    mockPrompt.mockResolvedValueOnce({ agents: ['unknown-agent'] });
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
     
     await initCommand();
@@ -108,7 +165,7 @@ describe('initCommand', () => {
     const configPath = path.join(tmpDir, '.mspec/mspec.json');
     expect(fs.existsSync(configPath)).toBe(true);
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    expect(config.agent).toBe('unknown-agent');
+    expect(config.agents).toContain('unknown-agent');
     
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No specific integration template found'));
   });
