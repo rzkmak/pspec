@@ -67,7 +67,7 @@ Once you are happy with the spec, use the planning command to break it down.
 
 **Command:**
 ```text
-/mspec.plan
+/mspec.plan 001-auth
 ```
 - If you don't provide a spec name, the AI will ask you which spec you want to plan.
 - **Sequencing:** The AI will read the spec and create a strict, logically sequenced checklist in `.mspec/tasks/001-auth.tasks.md` (Data -> Logic -> UI -> Edge Cases -> Automated Tests).
@@ -78,23 +78,13 @@ Once the checklist is generated, hand the wheel over to the AI to orchestrate th
 
 **Command:**
 ```text
-/mspec.implement
+/mspec.implement 001-auth
 ```
 - If you don't provide a spec name, the AI will ask you which spec you want to implement.
 - **Sub-Agent Delegation:** To prevent context bloat, the AI will read the first `- [ ]` task and delegate the actual coding to a sub-agent.
 - **Parallelization:** If tasks are independent (e.g., backend and frontend), it will spawn multiple sub-agents to execute them simultaneously!
 - **Empirical Verification:** The sub-agent will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
 - It will change the checkbox to `- [x]` and stop to wait for your review.
-
-#### Terminal Execution (Optional)
-If you prefer, you can use the terminal CLI to generate a strict execution prompt that you can paste to your AI:
-```bash
-# Generate the prompt for one-by-one execution
-npx mspec implement 001-auth
-
-# Generate the prompt for batch execution (don't stop for review)
-npx mspec implement 001-auth --batch
-```
 
 ---
 
