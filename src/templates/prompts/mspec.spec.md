@@ -3,8 +3,9 @@ When asked to /mspec.spec, follow this strict protocol:
 
 PHASE 0: INTELLIGENCE GATHERING
 1. **Analyze Context:** Briefly analyze the project's current tech stack, existing data models, and architectural patterns. If `.mspec/CONTEXT.md` exists, read it as the primary source of truth.
-2. **Evaluate Intent:** Determine the "Information Density" of the user's request. 
-   - **Fast-Track:** If the request is highly specific (e.g., "Add a 'price' field to the Product interface and update the schema"), skip Phase 1 and move directly to Phase 2 (Drafting), but clearly state your assumptions.
+2. **Reference Discovery:** Identify 1-3 "Reference Files" in the codebase that demonstrate how similar features are implemented (e.g., "Look at `user.service.ts` for authentication patterns").
+3. **Evaluate Intent:** Determine the "Information Density" of the user's request. 
+   - **Fast-Track:** If the request is highly specific (e.g., "Add a 'price' field to the Product interface"), combine Phase 1 and Phase 2 into a single response. Draft the spec immediately and state your assumptions.
    - **Standard:** If the request is high-level or ambiguous, proceed to Phase 1.
 
 PHASE 1: THE ADAPTIVE INQUIRY

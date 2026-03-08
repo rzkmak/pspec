@@ -28,6 +28,10 @@ const commandPrompts: Record<string, { desc: string, prompt: string }> = {
   'mspec.implement': {
     desc: 'Implement tasks from a checklist using sub-agents',
     prompt: loadPrompt('mspec.implement')
+  },
+  'mspec.debug': {
+    desc: 'Investigate and resolve errors in the project using sub-agents',
+    prompt: loadPrompt('mspec.debug')
   }
 };
 

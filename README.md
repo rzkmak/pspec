@@ -86,6 +86,19 @@ Once the checklist is generated, hand the wheel over to the AI to orchestrate th
 - **Empirical Verification:** The sub-agent will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
 - It will change the checkbox to `- [x]` and stop to wait for your review.
 
+### Step 5: Debugging and Maintenance
+If you encounter bugs, compile errors, or failing tests (whether during implementation or in normal development), use the debug command.
+
+**Command:**
+```text
+/mspec.debug [error log or description]
+```
+- **Context Isolation:** The AI will automatically search the codebase for the error's source and spawn an isolated sub-agent to find a fix.
+- **Repro-First:** It will create a minimal reproduction script to confirm the bug before applying a fix.
+- **Parallel Hypotheses:** If there are multiple potential causes, it can investigate them in parallel to find the solution faster!
+- **MSpec-Aware:** It will check if the bug is related to any active tasks or existing specs to ensure consistency.
+
+
 ---
 
 ## Directory Structure

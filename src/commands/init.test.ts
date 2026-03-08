@@ -29,10 +29,10 @@ describe('initCommand', () => {
   });
 
   const providers = [
-    { agent: 'claude', expectedFiles: ['.claude/commands/mspec.spec.md', '.claude/commands/mspec.plan.md', '.claude/commands/mspec.implement.md'] },
-    { agent: 'gemini', expectedFiles: ['.gemini/commands/mspec.spec.toml', '.gemini/commands/mspec.plan.toml', '.gemini/commands/mspec.implement.toml'] },
-    { agent: 'cursor', expectedFiles: ['.cursor/rules/mspec.spec.mdc', '.cursor/rules/mspec.plan.mdc', '.cursor/rules/mspec.implement.mdc'] },
-    { agent: 'opencode', expectedFiles: ['.opencode/commands/mspec.spec.md', '.opencode/commands/mspec.plan.md', '.opencode/commands/mspec.implement.md'] },
+    { agent: 'claude', expectedFiles: ['.claude/commands/mspec.spec.md', '.claude/commands/mspec.plan.md', '.claude/commands/mspec.implement.md', '.claude/commands/mspec.debug.md'] },
+    { agent: 'gemini', expectedFiles: ['.gemini/commands/mspec.spec.toml', '.gemini/commands/mspec.plan.toml', '.gemini/commands/mspec.implement.toml', '.gemini/commands/mspec.debug.toml'] },
+    { agent: 'cursor', expectedFiles: ['.cursor/rules/mspec.spec.mdc', '.cursor/rules/mspec.plan.mdc', '.cursor/rules/mspec.implement.mdc', '.cursor/rules/mspec.debug.mdc'] },
+    { agent: 'opencode', expectedFiles: ['.opencode/commands/mspec.spec.md', '.opencode/commands/mspec.plan.md', '.opencode/commands/mspec.implement.md', '.opencode/commands/mspec.debug.md'] },
     { agent: 'zed', expectedFiles: ['.mspec/INSTRUCTIONS.md'] },
     { agent: 'generic', expectedFiles: ['.mspec/INSTRUCTIONS.md'] }
   ];

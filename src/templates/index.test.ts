@@ -48,6 +48,17 @@ describe('templates', () => {
     });
   });
 
+  describe('debug templates', () => {
+    it('should be correctly formatted as a general debugging tool', () => {
+      const geminiTemplates = getTemplates('gemini');
+      const debugTemplate = geminiTemplates.find(t => t.file === 'mspec.debug.toml');
+      
+      expect(debugTemplate).toBeDefined();
+      expect(debugTemplate?.content).toContain('description = "Investigate and resolve errors in the project using sub-agents"');
+      expect(debugTemplate?.content).toContain('You are an AI Debugging Expert using the mspec framework.');
+    });
+  });
+
   describe('getTemplates', () => {
     it('should return an empty array for unknown agents', () => {
       expect(getTemplates('unknown')).toEqual([]);
