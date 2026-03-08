@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "build": "tsc"
+    "build": "tsc && mkdir -p dist/templates/prompts && cp src/templates/prompts/*.md dist/templates/prompts/"
   },
   "keywords": "mspec,spec,sdd,ai,claude,gemini,cursor,zed,opencode",
   "author": "rzkmak",
