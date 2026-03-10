@@ -122,23 +122,36 @@ describe('initCommand', () => {
     expect(fs.existsSync(path.join(tmpDir, '.claude/commands/mspec.spec.md'))).toBe(true);
 
     // 2nd init: Add 'gemini', 'claude' should be pre-selected (enabled: true)
-    mockPrompt.mockResolvedValueOnce({ agents: ['claude', 'gemini'] });
+    // Also need to mock overwrite prompts for existing claude agent files
+    mockPrompt
+      .mockResolvedValueOnce({ agents: ['claude', 'gemini'] })
+      .mockResolvedValueOnce({ action: 'overwrite' });
     await initCommand();
 
-    // Verify prompt was called with 'claude' enabled
-    expect(mockPrompt).toHaveBeenLastCalledWith(expect.objectContaining({
-      choices: expect.arrayContaining([
+    // Verify prompt was called with 'claude' enabled (check all calls for the agents selection)
+    const agentSelectionCalls = mockPrompt.mock.calls.filter(
+      call => call[0].name === 'agents'
+    );
+    expect(agentSelectionCalls.length).toBeGreaterThanOrEqual(2);
+    
+    // The second agents selection should have claude enabled and gemini not enabled
+    const secondAgentCall = agentSelectionCalls[1];
+    expect(secondAgentCall[0].choices).toEqual(
+      expect.arrayContaining([
         expect.objectContaining({ name: 'claude', enabled: true }),
         expect.objectContaining({ name: 'gemini', enabled: false })
       ])
-    }));
+    );
 
     config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
     expect(config.agents).toEqual(['claude', 'gemini']);
     expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
 
     // 3rd init: Remove 'claude', keep 'gemini'
-    mockPrompt.mockResolvedValueOnce({ agents: ['gemini'] });
+    // Need to mock overwrite prompts for existing gemini agent files
+    mockPrompt
+      .mockResolvedValueOnce({ agents: ['gemini'] })
+      .mockResolvedValueOnce({ action: 'overwrite' });
     await initCommand();
 
     config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
@@ -168,5 +181,311 @@ describe('initCommand', () => {
     expect(config.agents).toContain('unknown-agent');
     
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No specific integration template found'));
+  });
+});
+
+describe('initCommand agent files', () => {
+  let originalCwd: () => string;
+  let tmpDir: string;
+
+  beforeAll(() => {
+    originalCwd = process.cwd;
+  });
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mspec-test-agents-'));
+    process.cwd = () => tmpDir;
+    mockPrompt.mockReset();
+  });
+
+  afterEach(() => {
+    process.cwd = originalCwd;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    jest.restoreAllMocks();
+  });
+
+  it('should create agent definition files for claude', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    // Check that agent files were created
+    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/architect.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/debugger.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/task_planner.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/generalist.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/investigator.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/implementator.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/test_planner.md'))).toBe(true);
+
+    // Verify content
+    const architectContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'utf-8');
+    expect(architectContent).toContain('name: architect');
+    expect(architectContent).toContain('## Capabilities');
+    expect(architectContent).toContain('## Tools');
+    expect(architectContent).toContain('## Constraints');
+    expect(architectContent).toContain('## Decision Rules');
+    expect(architectContent).toContain('## Token Efficiency');
+  });
+
+  it('should create agent definition files for gemini', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['gemini'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    expect(fs.existsSync(path.join(tmpDir, '.gemini/agents/architect.toml'))).toBe(true);
+    
+    const architectContent = fs.readFileSync(path.join(tmpDir, '.gemini/agents/architect.toml'), 'utf-8');
+    expect(architectContent).toContain('name = "architect"');
+    expect(architectContent).toContain('[tools]');
+    expect(architectContent).toContain('[communication]');
+    expect(architectContent).toContain('prompt = """');
+  });
+
+  it('should create agent definition files for cursor', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['cursor'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    expect(fs.existsSync(path.join(tmpDir, '.cursor/agents/architect.mdc'))).toBe(true);
+    
+    const architectContent = fs.readFileSync(path.join(tmpDir, '.cursor/agents/architect.mdc'), 'utf-8');
+    expect(architectContent).toContain('globs: "*"');
+    expect(architectContent).toContain('name: architect');
+  });
+
+  it('should create AGENTS.md for zed', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['zed'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    expect(fs.existsSync(path.join(tmpDir, '.mspec/AGENTS.md'))).toBe(true);
+    
+    const agentsContent = fs.readFileSync(path.join(tmpDir, '.mspec/AGENTS.md'), 'utf-8');
+    expect(agentsContent).toContain('# mspec Agents');
+    expect(agentsContent).toContain('## architect');
+    expect(agentsContent).toContain('## task_planner');
+    expect(agentsContent).toContain('### Capabilities');
+  });
+
+  it('should ask user when agent files already exist', async () => {
+    // Create existing agent files
+    fs.mkdirSync(path.join(tmpDir, '.claude/agents'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'custom content');
+    
+    // First prompt: select agents, second prompt: overwrite choice
+    mockPrompt
+      .mockResolvedValueOnce({ agents: ['claude'] })
+      .mockResolvedValueOnce({ action: 'overwrite' });
+    
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    // Should have overwritten
+    const architectContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'utf-8');
+    expect(architectContent).toContain('name: architect');
+    expect(architectContent).not.toContain('custom content');
+    
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Existing agent files found'));
+  });
+
+  it('should preserve existing agent files when user chooses preserve', async () => {
+    // Create existing agent files
+    fs.mkdirSync(path.join(tmpDir, '.claude/agents'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'custom content');
+    
+    // First prompt: select agents, second prompt: preserve choice
+    mockPrompt
+      .mockResolvedValueOnce({ agents: ['claude'] })
+      .mockResolvedValueOnce({ action: 'preserve' });
+    
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    // Should have preserved
+    const architectContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'utf-8');
+    expect(architectContent).toBe('custom content');
+    
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Preserving existing agent file'));
+  });
+
+  it('should fail entirely when agent deployment fails', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    // Mock fs.writeFileSync to throw error
+    const originalWriteFile = fs.writeFileSync;
+    fs.writeFileSync = jest.fn(() => {
+      throw new Error('Permission denied');
+    }) as any;
+    
+    await expect(initCommand()).rejects.toThrow('Permission denied');
+    
+    fs.writeFileSync = originalWriteFile;
+  });
+
+  describe('edge cases', () => {
+    it('should handle user cancellation during overwrite/preserve prompt', async () => {
+      // Create existing agent files
+      fs.mkdirSync(path.join(tmpDir, '.claude/agents'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'custom content');
+      
+      // First prompt: select agents, second prompt: user cancels
+      mockPrompt
+        .mockResolvedValueOnce({ agents: ['claude'] })
+        .mockRejectedValueOnce(new Error('User cancelled'));
+      
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await expect(initCommand()).rejects.toThrow('Agent deployment cancelled by user');
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Agent deployment cancelled'));
+    });
+
+    it('should handle missing agent definition directory creation', async () => {
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await initCommand();
+
+      // Verify all agent directories were created
+      expect(fs.existsSync(path.join(tmpDir, '.claude/agents'))).toBe(true);
+      
+      // Should have created all 7 agent files
+      const agentFiles = fs.readdirSync(path.join(tmpDir, '.claude/agents'));
+      expect(agentFiles.length).toBe(7);
+      expect(agentFiles).toContain('architect.md');
+      expect(agentFiles).toContain('task_planner.md');
+      expect(agentFiles).toContain('generalist.md');
+      expect(agentFiles).toContain('investigator.md');
+      expect(agentFiles).toContain('debugger.md');
+      expect(agentFiles).toContain('implementator.md');
+      expect(agentFiles).toContain('test_planner.md');
+    });
+
+    it('should handle mixed existing and new agent files', async () => {
+      // Create only some existing agent files
+      fs.mkdirSync(path.join(tmpDir, '.claude/agents'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'custom architect');
+      fs.writeFileSync(path.join(tmpDir, '.claude/agents/debugger.md'), 'custom debugger');
+      // Other 5 agents don't exist yet
+      
+      mockPrompt
+        .mockResolvedValueOnce({ agents: ['claude'] })
+        .mockResolvedValueOnce({ action: 'preserve' });
+      
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await initCommand();
+
+      // Should preserve existing
+      const architectContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'utf-8');
+      expect(architectContent).toBe('custom architect');
+      
+      const debuggerContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/debugger.md'), 'utf-8');
+      expect(debuggerContent).toBe('custom debugger');
+      
+      // Should create new ones
+      const generalistContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/generalist.md'), 'utf-8');
+      expect(generalistContent).toContain('name: generalist');
+    });
+
+    it('should handle multiple agents with different file locations', async () => {
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude', 'gemini'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await initCommand();
+
+      // Claude agents
+      expect(fs.existsSync(path.join(tmpDir, '.claude/agents/architect.md'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.claude/agents/debugger.md'))).toBe(true);
+      
+      // Gemini agents
+      expect(fs.existsSync(path.join(tmpDir, '.gemini/agents/architect.toml'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.gemini/agents/debugger.toml'))).toBe(true);
+      
+      // Verify formats are different
+      const claudeContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'utf-8');
+      const geminiContent = fs.readFileSync(path.join(tmpDir, '.gemini/agents/architect.toml'), 'utf-8');
+      
+      expect(claudeContent).toContain('name: architect');
+      expect(geminiContent).toContain('name = "architect"');
+    });
+
+    it('should handle zed format with single AGENTS.md file', async () => {
+      mockPrompt.mockResolvedValueOnce({ agents: ['zed'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await initCommand();
+
+      // Should create single AGENTS.md, not individual files
+      expect(fs.existsSync(path.join(tmpDir, '.mspec/AGENTS.md'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.zed/agents'))).toBe(false);
+      
+      // Should contain all agents
+      const content = fs.readFileSync(path.join(tmpDir, '.mspec/AGENTS.md'), 'utf-8');
+      expect(content).toContain('## architect');
+      expect(content).toContain('## task_planner');
+      expect(content).toContain('## generalist');
+      expect(content).toContain('## investigator');
+      expect(content).toContain('## debugger');
+      expect(content).toContain('## implementator');
+      expect(content).toContain('## test_planner');
+    });
+
+    it('should handle empty directories correctly', async () => {
+      // Pre-create empty directories
+      fs.mkdirSync(path.join(tmpDir, '.claude'), { recursive: true });
+      fs.mkdirSync(path.join(tmpDir, '.claude/agents'), { recursive: true });
+      
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await initCommand();
+
+      // Should still create all agent files
+      const agentFiles = fs.readdirSync(path.join(tmpDir, '.claude/agents'));
+      expect(agentFiles.length).toBe(7);
+    });
+
+    it('should handle overwrite for zed AGENTS.md', async () => {
+      // Create existing AGENTS.md
+      fs.mkdirSync(path.join(tmpDir, '.mspec'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, '.mspec/AGENTS.md'), 'custom agents content');
+      
+      mockPrompt
+        .mockResolvedValueOnce({ agents: ['zed'] })
+        .mockResolvedValueOnce({ action: 'overwrite' });
+      
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await initCommand();
+
+      const content = fs.readFileSync(path.join(tmpDir, '.mspec/AGENTS.md'), 'utf-8');
+      expect(content).toContain('# mspec Agents');
+      expect(content).not.toBe('custom agents content');
+    });
+
+    it('should handle preserve for zed AGENTS.md', async () => {
+      // Create existing AGENTS.md
+      fs.mkdirSync(path.join(tmpDir, '.mspec'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, '.mspec/AGENTS.md'), 'custom agents content');
+      
+      mockPrompt
+        .mockResolvedValueOnce({ agents: ['zed'] })
+        .mockResolvedValueOnce({ action: 'preserve' });
+      
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      await initCommand();
+
+      const content = fs.readFileSync(path.join(tmpDir, '.mspec/AGENTS.md'), 'utf-8');
+      expect(content).toBe('custom agents content');
+    });
   });
 });

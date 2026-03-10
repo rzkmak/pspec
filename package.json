@@ -1,11 +1,11 @@
 {
   "name": "mspec",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "A minimalist Spec-Driven Development (SDD) toolkit for solo developers and AI agents",
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "build": "tsc && mkdir -p dist/templates/prompts && cp src/templates/prompts/*.md dist/templates/prompts/"
+    "build": "tsc && mkdir -p dist/templates/prompts dist/templates/agents && cp src/templates/prompts/*.md dist/templates/prompts/ && cp src/templates/agents/*.yaml dist/templates/agents/"
   },
   "keywords": [
     "mspec",
@@ -26,10 +26,12 @@
     "chalk": "^4.1.2",
     "commander": "^14.0.3",
     "enquirer": "^2.4.1",
+    "js-yaml": "^4.1.0",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"

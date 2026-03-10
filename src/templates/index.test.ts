@@ -1,4 +1,4 @@
-import { getTemplates, templates } from './index';
+import { getTemplates, templates, getAgent, getAgentPrompt, listAgents, AVAILABLE_AGENTS, getAgentTemplates } from './index';
 
 describe('templates', () => {
   it('should have templates for all supported agents', () => {
@@ -69,6 +69,336 @@ describe('templates', () => {
       expect(t.length).toBe(1);
       expect(t[0].file).toBe('INSTRUCTIONS.md');
       expect(t[0].content).toContain('# mspec Instructions');
+    });
+  });
+});
+
+describe('agents', () => {
+  describe('AVAILABLE_AGENTS', () => {
+    it('should contain all 7 hardcoded agents', () => {
+      expect(AVAILABLE_AGENTS).toHaveLength(7);
+      expect(AVAILABLE_AGENTS).toContain('architect');
+      expect(AVAILABLE_AGENTS).toContain('task_planner');
+      expect(AVAILABLE_AGENTS).toContain('generalist');
+      expect(AVAILABLE_AGENTS).toContain('investigator');
+      expect(AVAILABLE_AGENTS).toContain('debugger');
+      expect(AVAILABLE_AGENTS).toContain('implementator');
+      expect(AVAILABLE_AGENTS).toContain('test_planner');
+    });
+  });
+
+  describe('listAgents', () => {
+    it('should return all available agent names', () => {
+      const agents = listAgents();
+      expect(agents).toHaveLength(7);
+      expect(agents).toEqual(expect.arrayContaining(AVAILABLE_AGENTS));
+    });
+  });
+
+  describe('getAgent', () => {
+    it('should load architect agent correctly', () => {
+      const agent = getAgent('architect');
+      expect(agent.name).toBe('architect');
+      expect(agent.description).toBeDefined();
+      expect(agent.capabilities).toBeInstanceOf(Array);
+      expect(agent.tools).toBeInstanceOf(Object);
+      expect(agent.constraints).toBeInstanceOf(Array);
+      expect(agent.communication).toBeDefined();
+      expect(agent.communication.style).toBeDefined();
+      expect(agent.communication.format).toBeDefined();
+    });
+
+    it('should load all 7 agents successfully', () => {
+      AVAILABLE_AGENTS.forEach(agentName => {
+        const agent = getAgent(agentName);
+        expect(agent.name).toBe(agentName);
+        expect(agent.description).toBeDefined();
+        expect(agent.capabilities.length).toBeGreaterThan(0);
+        expect(agent.tools).toBeInstanceOf(Object);
+        // Check that at least one tool category has tools
+        const hasTools = Object.values(agent.tools).some(
+          category => Array.isArray(category) && category.length > 0
+        );
+        expect(hasTools).toBe(true);
+        expect(agent.constraints.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should throw error for unknown agent', () => {
+      expect(() => getAgent('unknown_agent' as any)).toThrow('Agent template not found');
+    });
+  });
+
+  describe('getAgentPrompt', () => {
+    it('should return formatted prompt string', () => {
+      const prompt = getAgentPrompt('generalist');
+      expect(prompt).toContain('# GENERALIST');
+      expect(prompt).toContain('## Capabilities');
+      expect(prompt).toContain('## Available Tools');
+      expect(prompt).toContain('## Constraints');
+      expect(prompt).toContain('## Output Format');
+    });
+
+    it('should include all agents required sections', () => {
+      AVAILABLE_AGENTS.forEach(agentName => {
+        const prompt = getAgentPrompt(agentName);
+        expect(prompt).toContain(`# ${agentName.toUpperCase()}`);
+        expect(prompt).toContain('## Capabilities');
+        expect(prompt).toContain('## Available Tools');
+        expect(prompt).toContain('## Constraints');
+        expect(prompt).toContain('## Output Format');
+      });
+    });
+  });
+});
+
+describe('getAgentTemplates', () => {
+  it('should return agent templates in claude format', () => {
+    const templates = getAgentTemplates('claude');
+    expect(templates.length).toBe(7);
+    
+    const architectTemplate = templates.find(t => t.file === 'architect.md');
+    expect(architectTemplate).toBeDefined();
+    expect(architectTemplate?.dir).toBe('.claude/agents');
+    expect(architectTemplate?.content).toContain('name: architect');
+    expect(architectTemplate?.content).toContain('## Capabilities');
+    expect(architectTemplate?.content).toContain('## Tools');
+    expect(architectTemplate?.content).toContain('## Constraints');
+  });
+
+  it('should return agent templates in gemini format', () => {
+    const templates = getAgentTemplates('gemini');
+    expect(templates.length).toBe(7);
+    
+    const architectTemplate = templates.find(t => t.file === 'architect.toml');
+    expect(architectTemplate).toBeDefined();
+    expect(architectTemplate?.dir).toBe('.gemini/agents');
+    expect(architectTemplate?.content).toContain('name = "architect"');
+    expect(architectTemplate?.content).toContain('[tools]');
+    expect(architectTemplate?.content).toContain('[communication]');
+  });
+
+  it('should return agent templates in cursor format', () => {
+    const templates = getAgentTemplates('cursor');
+    expect(templates.length).toBe(7);
+    
+    const architectTemplate = templates.find(t => t.file === 'architect.mdc');
+    expect(architectTemplate).toBeDefined();
+    expect(architectTemplate?.dir).toBe('.cursor/agents');
+    expect(architectTemplate?.content).toContain('globs: "*"');
+  });
+
+  it('should return agent templates in opencode format', () => {
+    const templates = getAgentTemplates('opencode');
+    expect(templates.length).toBe(7);
+    
+    const architectTemplate = templates.find(t => t.file === 'architect.md');
+    expect(architectTemplate).toBeDefined();
+    expect(architectTemplate?.dir).toBe('.opencode/agents');
+  });
+
+  it('should return single AGENTS.md for zed', () => {
+    const templates = getAgentTemplates('zed');
+    expect(templates.length).toBe(1);
+    expect(templates[0].file).toBe('AGENTS.md');
+    expect(templates[0].dir).toBe('.mspec');
+    expect(templates[0].content).toContain('# mspec Agents');
+    expect(templates[0].content).toContain('## architect');
+    expect(templates[0].content).toContain('## task_planner');
+  });
+
+  it('should return single AGENTS.md for generic', () => {
+    const templates = getAgentTemplates('generic');
+    expect(templates.length).toBe(1);
+    expect(templates[0].file).toBe('AGENTS.md');
+    expect(templates[0].dir).toBe('.mspec');
+  });
+
+  it('should return empty array for unknown agent', () => {
+    const templates = getAgentTemplates('unknown');
+    expect(templates).toEqual([]);
+  });
+
+  it('should include all agent fields in claude format', () => {
+    const templates = getAgentTemplates('claude');
+    const generalistTemplate = templates.find(t => t.file === 'generalist.md');
+    
+    expect(generalistTemplate?.content).toContain('## Decision Rules');
+    expect(generalistTemplate?.content).toContain('## Token Efficiency');
+    expect(generalistTemplate?.content).toContain('## Pattern Matching');
+  });
+
+  it('should include test heuristics for test_planner in gemini format', () => {
+    const templates = getAgentTemplates('gemini');
+    const testPlannerTemplate = templates.find(t => t.file === 'test_planner.toml');
+    
+    expect(testPlannerTemplate?.content).toContain('Test Heuristics');
+  });
+
+  describe('edge cases', () => {
+    it('should handle agent with missing optional fields gracefully', () => {
+      // task_planner doesn't have role, pattern_matching, completion_criteria, or test_heuristics
+      const templates = getAgentTemplates('claude');
+      const taskPlannerTemplate = templates.find(t => t.file === 'task_planner.md');
+      
+      expect(taskPlannerTemplate).toBeDefined();
+      // Should still have required fields
+      expect(taskPlannerTemplate?.content).toContain('name: task_planner');
+      expect(taskPlannerTemplate?.content).toContain('## Capabilities');
+      expect(taskPlannerTemplate?.content).toContain('## Constraints');
+      // Should have guidelines since it's defined
+      expect(taskPlannerTemplate?.content).toContain('## Guidelines');
+    });
+
+    it('should handle agent with empty tool categories', () => {
+      // investigator only has read and delegate tools, no modify or verify
+      const agent = getAgent('investigator');
+      
+      expect(agent.tools.modify).toBeUndefined();
+      expect(agent.tools.verify).toBeUndefined();
+      expect(agent.tools.read).toBeDefined();
+      expect(agent.tools.delegate).toBeDefined();
+      
+      // Template generation should handle missing categories
+      const templates = getAgentTemplates('claude');
+      const investigatorTemplate = templates.find(t => t.file === 'investigator.md');
+      expect(investigatorTemplate?.content).toContain('## Tools');
+      expect(investigatorTemplate?.content).toContain('- Read:');
+      expect(investigatorTemplate?.content).toContain('- Delegate:');
+    });
+
+    it('should handle agent with all optional fields', () => {
+      // generalist has pattern_matching
+      const agent = getAgent('generalist');
+      
+      expect(agent.pattern_matching).toBeDefined();
+      expect(agent.pattern_matching?.length).toBeGreaterThan(0);
+      
+      const templates = getAgentTemplates('claude');
+      const generalistTemplate = templates.find(t => t.file === 'generalist.md');
+      expect(generalistTemplate?.content).toContain('## Pattern Matching');
+    });
+
+    it('should handle agent with completion_criteria', () => {
+      // implementator has completion_criteria
+      const agent = getAgent('implementator');
+      
+      expect(agent.completion_criteria).toBeDefined();
+      expect(agent.completion_criteria?.length).toBeGreaterThan(0);
+      
+      const templates = getAgentTemplates('claude');
+      const implementorTemplate = templates.find(t => t.file === 'implementator.md');
+      expect(implementorTemplate?.content).toContain('## Completion Criteria');
+    });
+
+    it('should handle agent with test_heuristics', () => {
+      // test_planner has test_heuristics
+      const agent = getAgent('test_planner');
+      
+      expect(agent.test_heuristics).toBeDefined();
+      
+      const templates = getAgentTemplates('claude');
+      const testPlannerTemplate = templates.find(t => t.file === 'test_planner.md');
+      expect(testPlannerTemplate?.content).toContain('## Test Heuristics');
+    });
+
+    it('should handle agent with role field', () => {
+      // architect has role
+      const agent = getAgent('architect');
+      
+      expect(agent.role).toBeDefined();
+      expect(agent.role?.length).toBeGreaterThan(0);
+      
+      const templates = getAgentTemplates('claude');
+      const architectTemplate = templates.find(t => t.file === 'architect.md');
+      expect(architectTemplate?.content).toContain('# Role');
+    });
+
+    it('should handle agent without role field', () => {
+      // task_planner doesn't have role
+      const agent = getAgent('task_planner');
+      
+      expect(agent.role).toBeUndefined();
+      
+      // getAgentPrompt should use description as fallback
+      const prompt = getAgentPrompt('task_planner');
+      expect(prompt).toContain('You are a');
+    });
+
+    it('should generate valid TOML for gemini format without syntax errors', () => {
+      const templates = getAgentTemplates('gemini');
+      
+      templates.forEach(template => {
+        // Check for proper TOML structure
+        expect(template.content).toContain('name = ');
+        expect(template.content).toContain('description = ');
+        expect(template.content).toContain('[tools]');
+        expect(template.content).toContain('[communication]');
+        expect(template.content).toContain('prompt = """');
+        expect(template.content).toContain('"""');
+        
+        // Should not have YAML-style key: value outside prompt block
+        const lines = template.content.split('\n');
+        let inPromptBlock = false;
+        lines.forEach(line => {
+          if (line.includes('prompt = """')) {
+            inPromptBlock = true;
+          } else if (line === '"""') {
+            inPromptBlock = false;
+          } else if (!inPromptBlock && line.trim() && !line.startsWith('#')) {
+            // Outside prompt block should use TOML format
+            expect(line).toMatch(/^\w+\s*=|^\[|^\s*$|^#/);
+          }
+        });
+      });
+    });
+
+    it('should generate valid Markdown with frontmatter for claude format', () => {
+      const templates = getAgentTemplates('claude');
+      
+      templates.forEach(template => {
+        // Should start with ---
+        expect(template.content.startsWith('---')).toBe(true);
+        // Should have YAML frontmatter structure
+        expect(template.content).toContain('name:');
+        expect(template.content).toContain('description:');
+        // Should have sections after frontmatter
+        expect(template.content).toContain('## Capabilities');
+      });
+    });
+
+    it('should include all 7 agents in zed AGENTS.md format', () => {
+      const templates = getAgentTemplates('zed');
+      
+      expect(templates.length).toBe(1);
+      const content = templates[0].content;
+      
+      // Should contain all agent sections
+      AVAILABLE_AGENTS.forEach(agentName => {
+        expect(content).toContain(`## ${agentName}`);
+      });
+      
+      // Should have proper structure
+      expect(content).toContain('# mspec Agents');
+      expect(content).toContain('### Capabilities');
+      expect(content).toContain('### Tools');
+      expect(content).toContain('### Constraints');
+    });
+
+    it('should handle getAgentPrompt for all agents without errors', () => {
+      AVAILABLE_AGENTS.forEach(agentName => {
+        const prompt = getAgentPrompt(agentName);
+        
+        // Should have required sections
+        expect(prompt).toContain(`# ${agentName.toUpperCase()}`);
+        expect(prompt).toContain('## Capabilities');
+        expect(prompt).toContain('## Available Tools');
+        expect(prompt).toContain('## Constraints');
+        expect(prompt).toContain('## Output Format');
+        
+        // Should not be empty
+        expect(prompt.length).toBeGreaterThan(100);
+      });
     });
   });
 });
