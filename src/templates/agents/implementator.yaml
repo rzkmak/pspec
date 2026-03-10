@@ -12,9 +12,9 @@ capabilities:
   - run_verification
 
 tools:
-  read: [read, glob, grep]
-  modify: [edit, write]
-  verify: [bash]
+  read: true
+  modify: true
+  verify: true
 
 constraints:
   - Implement exactly what the spec describes

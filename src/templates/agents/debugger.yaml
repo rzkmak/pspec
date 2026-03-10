@@ -13,10 +13,10 @@ capabilities:
   - run_tests
 
 tools:
-  read: [read]
-  modify: [edit, write]
-  verify: [bash]
-  delegate: [task]
+  read: true
+  modify: true
+  verify: true
+  delegate: true
 
 constraints:
   - Create minimal reproduction before fixing

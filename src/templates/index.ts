@@ -20,10 +20,10 @@ export interface AgentDefinition {
   role?: string;
   capabilities: string[];
   tools: {
-    read?: string[];
-    modify?: string[];
-    verify?: string[];
-    delegate?: string[];
+    read?: boolean;
+    modify?: boolean;
+    verify?: boolean;
+    delegate?: boolean;
   };
   constraints: string[];
   decision_rules?: string[];
@@ -106,23 +106,7 @@ description: "${data.desc}"
 ---
 ${data.prompt}
 `
-  })),
-  zed: [{
-    dir: '.mspec',
-    file: 'INSTRUCTIONS.md',
-    content: `# mspec Instructions
-
-${Object.entries(commandPrompts).map(([name, data]) => `## ${name}\n${data.prompt}`).join('\n\n')}
-`
-  }],
-  generic: [{
-    dir: '.mspec',
-    file: 'INSTRUCTIONS.md',
-    content: `# mspec Instructions
-
-${Object.entries(commandPrompts).map(([name, data]) => `## ${name}\n${data.prompt}`).join('\n\n')}
-`
-  }]
+  }))
 };
 
 export function getTemplates(agent: string): Template[] {
@@ -156,17 +140,17 @@ export function getAgentPrompt(name: AgentName): string {
   
   // Build tools list from categorized tools
   const toolsList: string[] = [];
-  if (agent.tools.read && agent.tools.read.length > 0) {
-    toolsList.push(`- Read: ${agent.tools.read.join(', ')}`);
+  if (agent.tools.read) {
+    toolsList.push(`- Read: read, glob, grep`);
   }
-  if (agent.tools.modify && agent.tools.modify.length > 0) {
-    toolsList.push(`- Modify: ${agent.tools.modify.join(', ')}`);
+  if (agent.tools.modify) {
+    toolsList.push(`- Modify: edit, write`);
   }
-  if (agent.tools.verify && agent.tools.verify.length > 0) {
-    toolsList.push(`- Verify: ${agent.tools.verify.join(', ')}`);
+  if (agent.tools.verify) {
+    toolsList.push(`- Verify: bash`);
   }
-  if (agent.tools.delegate && agent.tools.delegate.length > 0) {
-    toolsList.push(`- Delegate: ${agent.tools.delegate.join(', ')}`);
+  if (agent.tools.delegate) {
+    toolsList.push(`- Delegate: task`);
   }
   
   return `# ${agent.name.toUpperCase()}
@@ -203,17 +187,17 @@ function convertToClaudeFormat(agent: AgentDefinition): string {
     `tools:`
   ];
   
-  if (agent.tools.read && agent.tools.read.length > 0) {
-    frontmatterLines.push(`  read: [${agent.tools.read.join(', ')}]`);
+  if (agent.tools.read) {
+    frontmatterLines.push(`  read: true`);
   }
-  if (agent.tools.modify && agent.tools.modify.length > 0) {
-    frontmatterLines.push(`  modify: [${agent.tools.modify.join(', ')}]`);
+  if (agent.tools.modify) {
+    frontmatterLines.push(`  modify: true`);
   }
-  if (agent.tools.verify && agent.tools.verify.length > 0) {
-    frontmatterLines.push(`  verify: [${agent.tools.verify.join(', ')}]`);
+  if (agent.tools.verify) {
+    frontmatterLines.push(`  verify: true`);
   }
-  if (agent.tools.delegate && agent.tools.delegate.length > 0) {
-    frontmatterLines.push(`  delegate: [${agent.tools.delegate.join(', ')}]`);
+  if (agent.tools.delegate) {
+    frontmatterLines.push(`  delegate: true`);
   }
   
   sections.push('---');
@@ -230,17 +214,17 @@ function convertToClaudeFormat(agent: AgentDefinition): string {
   
   // Tools
   const toolLines: string[] = [];
-  if (agent.tools.read && agent.tools.read.length > 0) {
-    toolLines.push(`- Read: ${agent.tools.read.join(', ')}`);
+  if (agent.tools.read) {
+    toolLines.push(`- Read: read, glob, grep`);
   }
-  if (agent.tools.modify && agent.tools.modify.length > 0) {
-    toolLines.push(`- Modify: ${agent.tools.modify.join(', ')}`);
+  if (agent.tools.modify) {
+    toolLines.push(`- Modify: edit, write`);
   }
-  if (agent.tools.verify && agent.tools.verify.length > 0) {
-    toolLines.push(`- Verify: ${agent.tools.verify.join(', ')}`);
+  if (agent.tools.verify) {
+    toolLines.push(`- Verify: bash`);
   }
-  if (agent.tools.delegate && agent.tools.delegate.length > 0) {
-    toolLines.push(`- Delegate: ${agent.tools.delegate.join(', ')}`);
+  if (agent.tools.delegate) {
+    toolLines.push(`- Delegate: task`);
   }
   sections.push(`## Tools\n${toolLines.join('\n')}`);
   
@@ -299,17 +283,17 @@ function convertToGeminiFormat(agent: AgentDefinition): string {
   // Tools section
   lines.push('');
   lines.push('[tools]');
-  if (agent.tools.read && agent.tools.read.length > 0) {
-    lines.push(`read = [${agent.tools.read.map(t => `"${t}"`).join(', ')}]`);
+  if (agent.tools.read) {
+    lines.push(`read = true`);
   }
-  if (agent.tools.modify && agent.tools.modify.length > 0) {
-    lines.push(`modify = [${agent.tools.modify.map(t => `"${t}"`).join(', ')}]`);
+  if (agent.tools.modify) {
+    lines.push(`modify = true`);
   }
-  if (agent.tools.verify && agent.tools.verify.length > 0) {
-    lines.push(`verify = [${agent.tools.verify.map(t => `"${t}"`).join(', ')}]`);
+  if (agent.tools.verify) {
+    lines.push(`verify = true`);
   }
-  if (agent.tools.delegate && agent.tools.delegate.length > 0) {
-    lines.push(`delegate = [${agent.tools.delegate.map(t => `"${t}"`).join(', ')}]`);
+  if (agent.tools.delegate) {
+    lines.push(`delegate = true`);
   }
   
   // Communication
@@ -395,17 +379,17 @@ function convertToCursorFormat(agent: AgentDefinition): string {
     `tools:`
   ];
   
-  if (agent.tools.read && agent.tools.read.length > 0) {
-    frontmatterLines.push(`  read: [${agent.tools.read.join(', ')}]`);
+  if (agent.tools.read) {
+    frontmatterLines.push(`  read: true`);
   }
-  if (agent.tools.modify && agent.tools.modify.length > 0) {
-    frontmatterLines.push(`  modify: [${agent.tools.modify.join(', ')}]`);
+  if (agent.tools.modify) {
+    frontmatterLines.push(`  modify: true`);
   }
-  if (agent.tools.verify && agent.tools.verify.length > 0) {
-    frontmatterLines.push(`  verify: [${agent.tools.verify.join(', ')}]`);
+  if (agent.tools.verify) {
+    frontmatterLines.push(`  verify: true`);
   }
-  if (agent.tools.delegate && agent.tools.delegate.length > 0) {
-    frontmatterLines.push(`  delegate: [${agent.tools.delegate.join(', ')}]`);
+  if (agent.tools.delegate) {
+    frontmatterLines.push(`  delegate: true`);
   }
   
   const sections: string[] = [
@@ -421,17 +405,17 @@ function convertToCursorFormat(agent: AgentDefinition): string {
   sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
   
   const toolLines: string[] = [];
-  if (agent.tools.read && agent.tools.read.length > 0) {
-    toolLines.push(`- Read: ${agent.tools.read.join(', ')}`);
+  if (agent.tools.read) {
+    toolLines.push(`- Read: read, glob, grep`);
   }
-  if (agent.tools.modify && agent.tools.modify.length > 0) {
-    toolLines.push(`- Modify: ${agent.tools.modify.join(', ')}`);
+  if (agent.tools.modify) {
+    toolLines.push(`- Modify: edit, write`);
   }
-  if (agent.tools.verify && agent.tools.verify.length > 0) {
-    toolLines.push(`- Verify: ${agent.tools.verify.join(', ')}`);
+  if (agent.tools.verify) {
+    toolLines.push(`- Verify: bash`);
   }
-  if (agent.tools.delegate && agent.tools.delegate.length > 0) {
-    toolLines.push(`- Delegate: ${agent.tools.delegate.join(', ')}`);
+  if (agent.tools.delegate) {
+    toolLines.push(`- Delegate: task`);
   }
   sections.push(`## Tools\n${toolLines.join('\n')}`);
   
@@ -494,17 +478,17 @@ function convertToZedFormat(agents: AgentDefinition[]): string {
     sections.push('');
     
     sections.push(`### Tools`);
-    if (agent.tools.read && agent.tools.read.length > 0) {
-      sections.push(`- Read: ${agent.tools.read.join(', ')}`);
+    if (agent.tools.read) {
+      sections.push(`- Read: read, glob, grep`);
     }
-    if (agent.tools.modify && agent.tools.modify.length > 0) {
-      sections.push(`- Modify: ${agent.tools.modify.join(', ')}`);
+    if (agent.tools.modify) {
+      sections.push(`- Modify: edit, write`);
     }
-    if (agent.tools.verify && agent.tools.verify.length > 0) {
-      sections.push(`- Verify: ${agent.tools.verify.join(', ')}`);
+    if (agent.tools.verify) {
+      sections.push(`- Verify: bash`);
     }
-    if (agent.tools.delegate && agent.tools.delegate.length > 0) {
-      sections.push(`- Delegate: ${agent.tools.delegate.join(', ')}`);
+    if (agent.tools.delegate) {
+      sections.push(`- Delegate: task`);
     }
     sections.push('');
     
@@ -590,13 +574,6 @@ export function getAgentTemplates(agent: string): AgentTemplate[] {
         file: `${a.name}.md`,
         content: convertToOpenCodeFormat(a)
       }));
-    case 'zed':
-    case 'generic':
-      return [{
-        dir: '.mspec',
-        file: 'AGENTS.md',
-        content: convertToZedFormat(agents)
-      }];
     default:
       return [];
   }

@@ -11,9 +11,9 @@ capabilities:
   - create_specs
 
 tools:
-  read: [read, glob, grep]
-  modify: [edit, write]
-  verify: [bash]
+  read: true
+  modify: true
+  verify: true
 
 constraints:
   - Focus on clarity and completeness in specifications

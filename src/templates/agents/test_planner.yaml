@@ -12,9 +12,9 @@ capabilities:
   - plan_integration_tests
 
 tools:
-  read: [read, glob, grep]
-  modify: [write]
-  verify: [bash]
+  read: true
+  modify: true
+  verify: true
 
 constraints:
   - Cover happy paths, edge cases, and error scenarios

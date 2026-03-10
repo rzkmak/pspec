@@ -19,7 +19,7 @@ Based on `.mspec/specs/001-init-command.md`
 - [x] Create basic template content for `gemini` (`.gemini/commands/mspec.toml`).
 - [x] Create basic template content for `cursor` (`.cursor/rules/mspec.mdc`).
 - [x] Create basic template content for `opencode` (`.opencode/commands/mspec.md`).
-- [x] Create basic template content for `zed`/`generic` (`.mspec/INSTRUCTIONS.md`).
+
 - [x] Integrate template generation into `init.ts` based on selected agent.
 
 ## Phase 4: Validation

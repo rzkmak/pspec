@@ -4,7 +4,7 @@
 
 `mspec` is a lightweight alternative to heavy SDD frameworks. It removes the "enterprise theater" (branch-per-feature, complex state files, and heavy daemon processes) and focuses strictly on **intent** (the Spec) and **execution** (the Tasks) using simple Markdown files.
 
-It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, OpenCode, or Zed.
+It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, and OpenCode.
 
 ## Philosophy
 - **Token Efficient:** Uses a single `SPEC.md` for context instead of massive chat histories.

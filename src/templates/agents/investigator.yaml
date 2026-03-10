@@ -12,8 +12,8 @@ capabilities:
   - identify_dependencies
 
 tools:
-  read: [glob, grep, read]
-  delegate: [task]
+  read: true
+  delegate: true
 
 constraints:
   - Be thorough but efficient in searches

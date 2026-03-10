@@ -27,7 +27,7 @@ export async function initCommand() {
     }
   }
 
-  const choices = ['claude', 'gemini', 'cursor', 'opencode', 'zed', 'generic'];
+  const choices = ['claude', 'gemini', 'cursor', 'opencode'];
   let selectedAgents: string[] = [];
 
   try {
@@ -81,8 +81,6 @@ export async function initCommand() {
         fs.writeFileSync(path.join(targetDir, template.file), template.content);
         console.log(chalk.green(`Updated integration file for ${agent} at ${path.join(template.dir, template.file)}`));
       }
-    } else {
-      console.log(chalk.yellow(`No specific integration template found for ${agent}. Setup completed with generic settings.`));
     }
   }
 

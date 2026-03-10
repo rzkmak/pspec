@@ -2,7 +2,7 @@ import { getTemplates, templates, getAgent, getAgentPrompt, listAgents, AVAILABL
 
 describe('templates', () => {
   it('should have templates for all supported agents', () => {
-    const agents = ['claude', 'gemini', 'cursor', 'opencode', 'zed', 'generic'];
+    const agents = ['claude', 'gemini', 'cursor', 'opencode'];
     agents.forEach(agent => {
       expect(templates).toHaveProperty(agent);
       expect(Array.isArray(templates[agent])).toBe(true);
@@ -65,10 +65,10 @@ describe('templates', () => {
     });
 
     it('should return the correct templates for a known agent', () => {
-      const t = getTemplates('zed');
-      expect(t.length).toBe(1);
-      expect(t[0].file).toBe('INSTRUCTIONS.md');
-      expect(t[0].content).toContain('# mspec Instructions');
+      const t = getTemplates('opencode');
+      expect(t.length).toBe(4);
+      expect(t[0].file).toBe('mspec.spec.md');
+      expect(t[0].content).toContain('AI Spec Architect');
     });
   });
 });
@@ -115,9 +115,9 @@ describe('agents', () => {
         expect(agent.description).toBeDefined();
         expect(agent.capabilities.length).toBeGreaterThan(0);
         expect(agent.tools).toBeInstanceOf(Object);
-        // Check that at least one tool category has tools
+        // Check that at least one tool category is enabled
         const hasTools = Object.values(agent.tools).some(
-          category => Array.isArray(category) && category.length > 0
+          enabled => enabled === true
         );
         expect(hasTools).toBe(true);
         expect(agent.constraints.length).toBeGreaterThan(0);
@@ -197,23 +197,6 @@ describe('getAgentTemplates', () => {
     expect(architectTemplate?.dir).toBe('.opencode/agents');
   });
 
-  it('should return single AGENTS.md for zed', () => {
-    const templates = getAgentTemplates('zed');
-    expect(templates.length).toBe(1);
-    expect(templates[0].file).toBe('AGENTS.md');
-    expect(templates[0].dir).toBe('.mspec');
-    expect(templates[0].content).toContain('# mspec Agents');
-    expect(templates[0].content).toContain('## architect');
-    expect(templates[0].content).toContain('## task_planner');
-  });
-
-  it('should return single AGENTS.md for generic', () => {
-    const templates = getAgentTemplates('generic');
-    expect(templates.length).toBe(1);
-    expect(templates[0].file).toBe('AGENTS.md');
-    expect(templates[0].dir).toBe('.mspec');
-  });
-
   it('should return empty array for unknown agent', () => {
     const templates = getAgentTemplates('unknown');
     expect(templates).toEqual([]);
@@ -256,15 +239,15 @@ describe('getAgentTemplates', () => {
       
       expect(agent.tools.modify).toBeUndefined();
       expect(agent.tools.verify).toBeUndefined();
-      expect(agent.tools.read).toBeDefined();
-      expect(agent.tools.delegate).toBeDefined();
+      expect(agent.tools.read).toBe(true);
+      expect(agent.tools.delegate).toBe(true);
       
       // Template generation should handle missing categories
       const templates = getAgentTemplates('claude');
       const investigatorTemplate = templates.find(t => t.file === 'investigator.md');
       expect(investigatorTemplate?.content).toContain('## Tools');
-      expect(investigatorTemplate?.content).toContain('- Read:');
-      expect(investigatorTemplate?.content).toContain('- Delegate:');
+      expect(investigatorTemplate?.content).toContain('- Read: read, glob, grep');
+      expect(investigatorTemplate?.content).toContain('- Delegate: task');
     });
 
     it('should handle agent with all optional fields', () => {
@@ -365,24 +348,6 @@ describe('getAgentTemplates', () => {
         // Should have sections after frontmatter
         expect(template.content).toContain('## Capabilities');
       });
-    });
-
-    it('should include all 7 agents in zed AGENTS.md format', () => {
-      const templates = getAgentTemplates('zed');
-      
-      expect(templates.length).toBe(1);
-      const content = templates[0].content;
-      
-      // Should contain all agent sections
-      AVAILABLE_AGENTS.forEach(agentName => {
-        expect(content).toContain(`## ${agentName}`);
-      });
-      
-      // Should have proper structure
-      expect(content).toContain('# mspec Agents');
-      expect(content).toContain('### Capabilities');
-      expect(content).toContain('### Tools');
-      expect(content).toContain('### Constraints');
     });
 
     it('should handle getAgentPrompt for all agents without errors', () => {

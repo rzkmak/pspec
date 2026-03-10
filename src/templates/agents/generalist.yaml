@@ -13,9 +13,9 @@ capabilities:
   - refactor_code
 
 tools:
-  read: [read, glob, grep]
-  modify: [edit, write]
-  verify: [bash]
+  read: true
+  modify: true
+  verify: true
 
 constraints:
   - Only modify files explicitly mentioned in the task

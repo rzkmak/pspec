@@ -1,11 +1,11 @@
 {
   "name": "mspec",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "A minimalist Spec-Driven Development (SDD) toolkit for solo developers and AI agents",
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "build": "tsc && mkdir -p dist/templates/prompts dist/templates/agents && cp src/templates/prompts/*.md dist/templates/prompts/ && cp src/templates/agents/*.yaml dist/templates/agents/"
+    "build": "tsc && mkdir -p dist/templates/prompts dist/templates/agents && cp src/templates/prompts/*.md dist/templates/prompts/ && cp src/templates/agents/*.yaml dist/templates/agents/ && node dist/transform-agents.js dist/templates/agents dist/agents"
   },
   "keywords": [
     "mspec",
@@ -15,7 +15,6 @@
     "claude",
     "gemini",
     "cursor",
-    "zed",
     "opencode"
   ],
   "author": "rzkmak",

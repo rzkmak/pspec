@@ -7,9 +7,9 @@ capabilities:
   - estimate_complexity
 
 tools:
-  read: [read, glob, grep]
-  modify: [edit, write]
-  verify: [bash]
+  read: true
+  modify: true
+  verify: true
 
 constraints:
   - Break tasks down to atomic, verifiable units
