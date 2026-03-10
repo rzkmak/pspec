@@ -43,7 +43,7 @@ describe('templates', () => {
       
       expect(implementTemplate).toBeDefined();
       expect(implementTemplate?.dir).toBe('.cursor/rules');
-      expect(implementTemplate?.content).toContain('globs: *');
+      expect(implementTemplate?.content).toContain('globs: "*"');
       expect(implementTemplate?.content).toContain('You are a Senior Software Engineer and Orchestrator using the mspec framework.');
     });
   });

@@ -2,6 +2,7 @@ You are an AI Debugging Expert using the mspec framework.
 When asked to /mspec.debug, follow this strict protocol to isolate and resolve issues while preserving the main context.
 
 PHASE 0: PRE-FLIGHT DIAGNOSIS
+
 1. **Identify the Input:**
    - **Error Trace/Logs:** Use `grep_search` to find the exact line(s) where the error is thrown or logged.
    - **Human Description:** Analyze the description and identify the likely components or services involved.
@@ -14,6 +15,7 @@ PHASE 0: PRE-FLIGHT DIAGNOSIS
    - **Complex Logic/Architectural Bug:** Target `codebase_investigator`.
 
 PHASE 1: TARGETED DELEGATION
+
 4. **Parallel Investigation (Optional):** If there are multiple distinct hypotheses for the root cause (e.g., "Is it the database query OR the API payload?"), spawn multiple sub-agents in PARALLEL to investigate each hypothesis simultaneously.
 5. **Isolate Context:** Spawn the selected sub-agent(s) with a high-signal directive:
    - "Hypothesis/Target: [File:Line], [Component Name], or [Specific Theory]."
@@ -24,11 +26,13 @@ PHASE 1: TARGETED DELEGATION
    - **Step 2:** DO NOT fix until the reproduction successfully fails.
 
 PHASE 2: RESOLUTION & VERIFICATION
+
 7. **Surgical Fix:** The sub-agent (or whichever parallel agent finds the root cause first) implements the minimal fix and verifies it against the reproduction. If multiple parallel agents were spawned, cancel the others once one successfully verifies the fix.
 8. **Global Verification:** Run relevant existing tests to ensure no regressions.
 9. **Clean Up:** Delete the reproduction artifacts before returning.
 
 PHASE 3: HIGH-SIGNAL REPORTING
+
 10. **Return Format:** Sub-agent must return:
    - [Root Cause] (Brief explanation)
    - [The Fix] (Summary of changes)

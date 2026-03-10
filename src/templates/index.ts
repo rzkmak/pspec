@@ -58,8 +58,8 @@ ${data.prompt}
     dir: '.cursor/rules',
     file: `${name}.mdc`,
     content: `---
-description: ${data.desc}
-globs: *
+description: "${data.desc}"
+globs: "*"
 ---
 ${data.prompt}
 `
