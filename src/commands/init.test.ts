@@ -17,7 +17,7 @@ describe('initCommand', () => {
   });
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mspec-test-init-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pspec-test-init-'));
     process.cwd = () => tmpDir;
     mockPrompt.mockReset();
   });
@@ -29,24 +29,24 @@ describe('initCommand', () => {
   });
 
   const providers = [
-    { agent: 'claude', expectedFiles: ['.claude/commands/mspec.spec.md', '.claude/commands/mspec.plan.md', '.claude/commands/mspec.implement.md', '.claude/commands/mspec.debug.md'] },
-    { agent: 'gemini', expectedFiles: ['.gemini/commands/mspec.spec.toml', '.gemini/commands/mspec.plan.toml', '.gemini/commands/mspec.implement.toml', '.gemini/commands/mspec.debug.toml'] },
-    { agent: 'cursor', expectedFiles: ['.cursor/rules/mspec.spec.mdc', '.cursor/rules/mspec.plan.mdc', '.cursor/rules/mspec.implement.mdc', '.cursor/rules/mspec.debug.mdc'] },
-    { agent: 'opencode', expectedFiles: ['.opencode/commands/mspec.spec.md', '.opencode/commands/mspec.plan.md', '.opencode/commands/mspec.implement.md', '.opencode/commands/mspec.debug.md'] }
+    { agent: 'claude', expectedFiles: ['.claude/commands/pspec.spec.md', '.claude/commands/pspec.plan.md', '.claude/commands/pspec.implement.md', '.claude/commands/pspec.debug.md'] },
+    { agent: 'gemini', expectedFiles: ['.gemini/commands/pspec.spec.toml', '.gemini/commands/pspec.plan.toml', '.gemini/commands/pspec.implement.toml', '.gemini/commands/pspec.debug.toml'] },
+    { agent: 'cursor', expectedFiles: ['.cursor/rules/pspec.spec.mdc', '.cursor/rules/pspec.plan.mdc', '.cursor/rules/pspec.implement.mdc', '.cursor/rules/pspec.debug.mdc'] },
+    { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] }
   ];
 
   providers.forEach(({ agent, expectedFiles }) => {
-    it(`should initialize the .mspec environment for ${agent}`, async () => {
+    it(`should initialize the .pspec environment for ${agent}`, async () => {
       mockPrompt.mockResolvedValueOnce({ agents: [agent] });
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       
       await initCommand();
 
-      expect(fs.existsSync(path.join(tmpDir, '.mspec'))).toBe(true);
-      expect(fs.existsSync(path.join(tmpDir, '.mspec/specs'))).toBe(true);
-      expect(fs.existsSync(path.join(tmpDir, '.mspec/tasks'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.pspec'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.pspec/specs'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.pspec/tasks'))).toBe(true);
 
-      const configPath = path.join(tmpDir, '.mspec/mspec.json');
+      const configPath = path.join(tmpDir, '.pspec/pspec.json');
       expect(fs.existsSync(configPath)).toBe(true);
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
       expect(config.agents).toContain(agent);
@@ -64,45 +64,45 @@ describe('initCommand', () => {
     
     await initCommand();
 
-    const configPath = path.join(tmpDir, '.mspec/mspec.json');
+    const configPath = path.join(tmpDir, '.pspec/pspec.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     expect(config.agents).toEqual(['claude', 'gemini']);
 
-    expect(fs.existsSync(path.join(tmpDir, '.claude/commands/mspec.spec.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/commands/pspec.spec.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/pspec.spec.toml'))).toBe(true);
   });
 
-  it('should update and prompt even if .mspec directory already exists', async () => {
-    const mspecDir = path.join(tmpDir, '.mspec');
-    fs.mkdirSync(mspecDir);
-    fs.mkdirSync(path.join(mspecDir, 'specs'));
-    fs.mkdirSync(path.join(mspecDir, 'tasks'));
-    fs.writeFileSync(path.join(mspecDir, 'mspec.json'), JSON.stringify({ agents: ['cursor'] }));
+  it('should update and prompt even if .pspec directory already exists', async () => {
+    const pspecDir = path.join(tmpDir, '.pspec');
+    fs.mkdirSync(pspecDir);
+    fs.mkdirSync(path.join(pspecDir, 'specs'));
+    fs.mkdirSync(path.join(pspecDir, 'tasks'));
+    fs.writeFileSync(path.join(pspecDir, 'pspec.json'), JSON.stringify({ agents: ['cursor'] }));
 
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
     mockPrompt.mockResolvedValueOnce({ agents: ['cursor', 'gemini'] });
 
     await initCommand();
 
-    const configPath = path.join(tmpDir, '.mspec/mspec.json');
+    const configPath = path.join(tmpDir, '.pspec/pspec.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     expect(config.agents).toEqual(['cursor', 'gemini']);
     
-    expect(fs.existsSync(path.join(tmpDir, '.cursor/rules/mspec.spec.mdc'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.cursor/rules/pspec.spec.mdc'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/pspec.spec.toml'))).toBe(true);
   });
 
   it('should handle legacy "agent" field and migrate to "agents"', async () => {
-    const mspecDir = path.join(tmpDir, '.mspec');
-    fs.mkdirSync(mspecDir);
-    fs.writeFileSync(path.join(mspecDir, 'mspec.json'), JSON.stringify({ agent: 'claude' }));
+    const pspecDir = path.join(tmpDir, '.pspec');
+    fs.mkdirSync(pspecDir);
+    fs.writeFileSync(path.join(pspecDir, 'pspec.json'), JSON.stringify({ agent: 'claude' }));
 
     mockPrompt.mockResolvedValueOnce({ agents: ['claude', 'gemini'] });
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
     await initCommand();
 
-    const configPath = path.join(tmpDir, '.mspec/mspec.json');
+    const configPath = path.join(tmpDir, '.pspec/pspec.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     expect(config.agents).toEqual(['claude', 'gemini']);
     expect(config.agent).toBeUndefined();
@@ -115,9 +115,9 @@ describe('initCommand', () => {
     mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
     await initCommand();
     
-    let config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
+    let config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.pspec/pspec.json'), 'utf-8'));
     expect(config.agents).toEqual(['claude']);
-    expect(fs.existsSync(path.join(tmpDir, '.claude/commands/mspec.spec.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.claude/commands/pspec.spec.md'))).toBe(true);
 
     // 2nd init: Add 'gemini', 'claude' should be pre-selected (enabled: true)
     // Also need to mock overwrite prompts for existing claude agent files
@@ -141,9 +141,9 @@ describe('initCommand', () => {
       ])
     );
 
-    config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
+    config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.pspec/pspec.json'), 'utf-8'));
     expect(config.agents).toEqual(['claude', 'gemini']);
-    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/mspec.spec.toml'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.gemini/commands/pspec.spec.toml'))).toBe(true);
 
     // 3rd init: Remove 'claude', keep 'gemini'
     // Need to mock overwrite prompts for existing gemini agent files
@@ -152,9 +152,9 @@ describe('initCommand', () => {
       .mockResolvedValueOnce({ action: 'overwrite' });
     await initCommand();
 
-    config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.mspec/mspec.json'), 'utf-8'));
+    config = JSON.parse(fs.readFileSync(path.join(tmpDir, '.pspec/pspec.json'), 'utf-8'));
     expect(config.agents).toEqual(['gemini']);
-    // Note: mspec currently doesn't delete files of removed agents, which is fine for now
+    // Note: pspec currently doesn't delete files of removed agents, which is fine for now
   });
 
   it('should handle prompt cancellation gracefully', async () => {
@@ -164,7 +164,7 @@ describe('initCommand', () => {
     await initCommand();
     
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Initialization cancelled.'));
-    expect(fs.existsSync(path.join(tmpDir, '.mspec'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, '.pspec'))).toBe(false);
   });
   
 });
@@ -178,7 +178,7 @@ describe('initCommand agent files', () => {
   });
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mspec-test-agents-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pspec-test-agents-'));
     process.cwd = () => tmpDir;
     mockPrompt.mockReset();
   });

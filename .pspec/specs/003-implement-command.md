@@ -1,10 +1,10 @@
-# mspec implement Command
+# pspec implement Command
 
 ## Goal
 To orchestrate the execution of a completed task checklist by providing the AI agent with strict instructions on how to process the `.tasks.md` file sequentially.
 
 ## Context
-Unlike standard build tools, `mspec implement` doesn't execute code directly. Instead, it reads the `.tasks.md` file and outputs a highly structured prompt to `stdout` (or copies it to the clipboard). This prompt is designed to be pasted to an AI agent (or automatically intercepted by agents like Claude Code or Gemini CLI). It commands the agent to read the tasks, pick the first incomplete one, implement it, run tests, update the checklist, and then stop or proceed based on user preference.
+Unlike standard build tools, `pspec implement` doesn't execute code directly. Instead, it reads the `.tasks.md` file and outputs a highly structured prompt to `stdout` (or copies it to the clipboard). This prompt is designed to be pasted to an AI agent (or automatically intercepted by agents like Claude Code or Gemini CLI). It commands the agent to read the tasks, pick the first incomplete one, implement it, run tests, update the checklist, and then stop or proceed based on user preference.
 
 ## Logic Flow
 
@@ -15,11 +15,11 @@ sequenceDiagram
     participant FS as File System
     participant AI as AI Agent
     
-    User->>CLI: mspec implement <spec-name>
-    CLI->>FS: Check if .mspec/tasks/<spec-name>.tasks.md exists
+    User->>CLI: pspec implement <spec-name>
+    CLI->>FS: Check if .pspec/tasks/<spec-name>.tasks.md exists
     alt Tasks file does not exist
         FS-->>CLI: Not found
-        CLI-->>User: Error: Tasks file not found. Run 'mspec plan' first.
+        CLI-->>User: Error: Tasks file not found. Run 'pspec plan' first.
     else Tasks file exists
         CLI->>FS: Read task file content
         CLI->>CLI: Analyze for unchecked tasks (- [ ])
@@ -45,8 +45,8 @@ sequenceDiagram
 ## The Execution Prompt Template
 When the CLI runs, it should output a string similar to this to guide the AI:
 
-> **mspec execution directive:**
-> Please read `.mspec/tasks/[spec-name].tasks.md`. 
+> **pspec execution directive:**
+> Please read `.pspec/tasks/[spec-name].tasks.md`. 
 > 1. Find the first incomplete task marked with `- [ ]`.
 > 2. Implement the requirements for that specific task.
 > 3. Verify your implementation (run tests/build).

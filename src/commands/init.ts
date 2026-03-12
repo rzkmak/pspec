@@ -6,13 +6,13 @@ import { getTemplates, getAgentTemplates } from '../templates';
 const { prompt } = require('enquirer');
 
 export async function initCommand() {
-  const mspecDir = path.join(process.cwd(), '.mspec');
-  const configPath = path.join(mspecDir, 'mspec.json');
+  const pspecDir = path.join(process.cwd(), '.pspec');
+  const configPath = path.join(pspecDir, 'pspec.json');
   
   let existingAgents: string[] = [];
   let config: any = {};
 
-  if (fs.existsSync(mspecDir)) {
+  if (fs.existsSync(pspecDir)) {
     if (fs.existsSync(configPath)) {
       try {
         config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -52,24 +52,24 @@ export async function initCommand() {
   }
 
   // Create directories if they don't exist
-  if (!fs.existsSync(mspecDir)) {
-    fs.mkdirSync(path.join(mspecDir, 'specs'), { recursive: true });
-    fs.mkdirSync(path.join(mspecDir, 'tasks'), { recursive: true });
+  if (!fs.existsSync(pspecDir)) {
+    fs.mkdirSync(path.join(pspecDir, 'specs'), { recursive: true });
+    fs.mkdirSync(path.join(pspecDir, 'tasks'), { recursive: true });
   }
 
-  // Write mspec.json config
-  const mspecConfig = {
+  // Write pspec.json config
+  const pspecConfig = {
     ...config,
     agents: selectedAgents,
     paths: config.paths || {
-      specs: '.mspec/specs',
-      tasks: '.mspec/tasks'
+      specs: '.pspec/specs',
+      tasks: '.pspec/tasks'
     }
   };
   // Remove legacy field
-  delete mspecConfig.agent;
+  delete pspecConfig.agent;
   
-  fs.writeFileSync(configPath, JSON.stringify(mspecConfig, null, 2));
+  fs.writeFileSync(configPath, JSON.stringify(pspecConfig, null, 2));
 
   // Write agent integration files for each selected agent
   for (const agent of selectedAgents) {
@@ -87,7 +87,7 @@ export async function initCommand() {
   // Deploy agent definition files
   await deployAgentFiles(selectedAgents);
 
-  console.log(chalk.green('mspec initialized/updated successfully!'));
+  console.log(chalk.green('pspec initialized/updated successfully!'));
 }
 
 async function deployAgentFiles(selectedAgents: string[]) {

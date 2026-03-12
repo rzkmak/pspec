@@ -8,13 +8,13 @@ export function createProgram() {
   const program = new Command();
 
   program
-    .name('mspec')
+    .name('pspec')
     .description('Minimalist Spec-Driven Development CLI')
     .version(pkg.version);
 
   program
     .command('init')
-    .description('Initialize mspec in the current directory')
+    .description('Initialize pspec in the current directory')
     .action(initCommand);
 
   return program;

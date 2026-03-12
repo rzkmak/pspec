@@ -8,7 +8,7 @@ jest.mock('./commands/init', () => ({
 describe('CLI index', () => {
   it('should have correct name, description and version', () => {
     const program = createProgram();
-    expect(program.name()).toBe('mspec');
+    expect(program.name()).toBe('pspec');
     expect(program.description()).toBe('Minimalist Spec-Driven Development CLI');
     const pkg = require('../package.json');
     expect(program.version()).toBe(pkg.version);
@@ -20,7 +20,7 @@ describe('CLI index', () => {
     expect(commandNames).toContain('init');
     
     const initCmd = program.commands.find(cmd => cmd.name() === 'init');
-    expect(initCmd?.description()).toBe('Initialize mspec in the current directory');
+    expect(initCmd?.description()).toBe('Initialize pspec in the current directory');
   });
 
   it('should call initCommand when running "init"', async () => {
@@ -29,7 +29,7 @@ describe('CLI index', () => {
     // We override exitOverride to prevent the test process from exiting.
     program.exitOverride();
     
-    await program.parseAsync(['node', 'mspec', 'init']);
+    await program.parseAsync(['node', 'pspec', 'init']);
     
     expect(initCommand).toHaveBeenCalled();
   });

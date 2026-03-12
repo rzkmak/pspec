@@ -1,6 +1,6 @@
-# mspec init - Implementation Tasks
+# pspec init - Implementation Tasks
 
-Based on `.mspec/specs/001-init-command.md`
+Based on `.pspec/specs/001-init-command.md`
 
 ## Phase 1: Setup & Scaffolding
 - [x] Initialize Node project (`npm init -y`) and install dependencies (`typescript`, `commander`, `enquirer`).
@@ -9,16 +9,16 @@ Based on `.mspec/specs/001-init-command.md`
 - [x] Create `src/commands/init.ts` for the `init` logic.
 
 ## Phase 2: Core Logic (`init.ts`)
-- [x] Implement check for existing `.mspec/` directory.
+- [x] Implement check for existing `.pspec/` directory.
 - [x] Implement `enquirer` prompt to select the AI agent.
-- [x] Implement logic to create `.mspec/specs/` and `.mspec/tasks/` directories.
-- [x] Implement logic to generate `mspec.json`.
+- [x] Implement logic to create `.pspec/specs/` and `.pspec/tasks/` directories.
+- [x] Implement logic to generate `pspec.json`.
 
 ## Phase 3: Agent Integration
-- [x] Create basic template content for `claude` (`.claude/commands/mspec.md`).
-- [x] Create basic template content for `gemini` (`.gemini/commands/mspec.toml`).
-- [x] Create basic template content for `cursor` (`.cursor/rules/mspec.mdc`).
-- [x] Create basic template content for `opencode` (`.opencode/commands/mspec.md`).
+- [x] Create basic template content for `claude` (`.claude/commands/pspec.md`).
+- [x] Create basic template content for `gemini` (`.gemini/commands/pspec.toml`).
+- [x] Create basic template content for `cursor` (`.cursor/rules/pspec.mdc`).
+- [x] Create basic template content for `opencode` (`.opencode/commands/pspec.md`).
 
 - [x] Integrate template generation into `init.ts` based on selected agent.
 

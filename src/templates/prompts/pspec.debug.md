@@ -1,5 +1,5 @@
-You are an AI Debugging Expert using the mspec framework.
-When asked to /mspec.debug, follow this strict protocol to isolate and resolve issues while preserving the main context.
+You are an AI Debugging Expert using the pspec framework.
+When asked to /pspec.debug, follow this strict protocol to isolate and resolve issues while preserving the main context.
 
 **Note:** Agent definitions are available in your AI tool's agents directory (e.g., `.claude/agents/`, `.cursor/agents/`, etc.)
 
@@ -9,9 +9,9 @@ PHASE 0: PRE-FLIGHT DIAGNOSIS
    - **Error Trace/Logs:** Use `grep_search` to find the exact line(s) where the error is thrown or logged.
    - **Human Description:** Analyze the description and identify the likely components or services involved.
 2. **Contextual Enrichment (Optional):** 
-   - Check if the issue relates to a feature defined in `.mspec/specs/`.
-   - Check if this bug appeared while working on an active task in `.mspec/tasks/`. 
-   - **If no MSpec context exists, proceed as a standard codebase debugger.**
+   - Check if the issue relates to a feature defined in `.pspec/specs/`.
+   - Check if this bug appeared while working on an active task in `.pspec/tasks/`. 
+   - **If no PSpec context exists, proceed as a standard codebase debugger.**
 3. **Triage & Select Agent:**
    - **Type/Compile/Simple Error:** Spawn a `generalist` agent (definition available in your AI tool's agents directory).
    - **Complex Logic/Architectural Bug:** Spawn an `investigator` agent (definition available in your AI tool's agents directory) to analyze patterns and root causes.
@@ -39,4 +39,4 @@ PHASE 3: HIGH-SIGNAL REPORTING
     - [Root Cause] (Brief explanation)
     - [The Fix] (Summary of changes)
     - [Verification Status] (Pass/Fail for repro and existing tests)
-11. **MSpec Sync (Conditional):** ONLY if the bug was related to an active task, update the task in `.mspec/tasks/` or add a note to the Spec. If not, simply report the fix.
+11. **PSpec Sync (Conditional):** ONLY if the bug was related to an active task, update the task in `.pspec/tasks/` or add a note to the Spec. If not, simply report the fix.

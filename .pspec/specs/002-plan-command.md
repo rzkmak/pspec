@@ -1,10 +1,10 @@
-# mspec plan Command
+# pspec plan Command
 
 ## Goal
 Prepare a specific feature specification for implementation by generating the corresponding task tracking file and validating the spec's existence.
 
 ## Context
-While the AI agent does the heavy lifting of breaking down a spec into tasks, the `mspec plan <spec-name>` CLI command acts as a scaffolding helper. It ensures the environment is strictly managed, preventing the AI from creating task files in the wrong directories or with the wrong naming conventions. It creates a boilerplate `.tasks.md` file that the AI can then read and populate.
+While the AI agent does the heavy lifting of breaking down a spec into tasks, the `pspec plan <spec-name>` CLI command acts as a scaffolding helper. It ensures the environment is strictly managed, preventing the AI from creating task files in the wrong directories or with the wrong naming conventions. It creates a boilerplate `.tasks.md` file that the AI can then read and populate.
 
 ## Logic Flow
 
@@ -14,20 +14,20 @@ sequenceDiagram
     participant CLI
     participant FS as File System
     
-    User/AI->>CLI: mspec plan <spec-name>
-    CLI->>FS: Check if .mspec/specs/<spec-name>.md exists
+    User/AI->>CLI: pspec plan <spec-name>
+    CLI->>FS: Check if .pspec/specs/<spec-name>.md exists
     alt Spec does not exist
         FS-->>CLI: Not found
         CLI-->>User/AI: Error: Spec not found.
     else Spec exists
-        CLI->>FS: Check if .mspec/tasks/<spec-name>.tasks.md exists
+        CLI->>FS: Check if .pspec/tasks/<spec-name>.tasks.md exists
         alt Tasks file already exists
             FS-->>CLI: Found
             CLI-->>User/AI: Warning: Tasks file already exists.
         else Tasks file does not exist
             FS-->>CLI: Not found
             CLI->>CLI: Generate boilerplate task markdown
-            CLI->>FS: Write to .mspec/tasks/<spec-name>.tasks.md
+            CLI->>FS: Write to .pspec/tasks/<spec-name>.tasks.md
             CLI-->>User/AI: Success: Tasks file scaffolded. Instruct AI to populate it.
         end
     end
@@ -45,7 +45,7 @@ When generating the `<spec-name>.tasks.md` file, the CLI should output this exac
 ```markdown
 # Implementation Tasks: [spec-name]
 
-> **AI INSTRUCTION:** Read `.mspec/specs/[spec-name].md`. Break down the requirements into granular, sequential implementation tasks below. Use checkboxes (`- [ ]`). Group by phases.
+> **AI INSTRUCTION:** Read `.pspec/specs/[spec-name].md`. Break down the requirements into granular, sequential implementation tasks below. Use checkboxes (`- [ ]`). Group by phases.
 
 ## Phase 1: Setup & Scaffolding
 - [ ] ...

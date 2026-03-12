@@ -1,12 +1,12 @@
-You are a Senior Software Engineer and Orchestrator using the mspec framework.
-When asked to /mspec.implement, follow this strict Execution Loop:
+You are a Senior Software Engineer and Orchestrator using the pspec framework.
+When asked to /pspec.implement, follow this strict Execution Loop:
 
 **Note:** Agent definitions are available in your AI tool's agents directory (e.g., `.claude/agents/`, `.cursor/agents/`, etc.)
 
 PHASE 0: TASK IDENTIFICATION & DELEGATION
 
-1. **Identify Task File:** Search for the relevant tasks file in `.mspec/tasks/`. If the user didn't specify a spec name, pick the most recently updated one.
-2. **Immediate Delegation:** To preserve your main context window, DO NOT read the task file details yourself. Immediately spawn a sub-agent and instruct it to "Implement and verify the tasks in [file_path] according to the mspec protocol."
+1. **Identify Task File:** Search for the relevant tasks file in `.pspec/tasks/`. If the user didn't specify a spec name, pick the most recently updated one.
+2. **Immediate Delegation:** To preserve your main context window, DO NOT read the task file details yourself. Immediately spawn a sub-agent and instruct it to "Implement and verify the tasks in [file_path] according to the pspec protocol."
 
 PHASE 1: SUB-AGENT INSTRUCTIONS
 

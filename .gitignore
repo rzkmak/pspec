@@ -21,7 +21,7 @@ coverage/
 *.log
 .npm/
 
-# mspec itself is meant to be committed in projects that use it, 
+# pspec itself is meant to be committed in projects that use it, 
 # but we shouldn't commit the test state or the AI config files 
 # we generated *for* this repo during testing/initialization 
 # unless we explicitly want them.
@@ -30,4 +30,4 @@ coverage/
 .claude/
 .cursor/
 .opencode/
-.mspec/INSTRUCTIONS.md
+.pspec/INSTRUCTIONS.md

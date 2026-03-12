@@ -51,21 +51,21 @@ const loadPrompt = (name: string): string => {
 };
 
 const commandPrompts: Record<string, { desc: string, prompt: string }> = {
-  'mspec.spec': {
+  'pspec.spec': {
     desc: 'Start an inquiry to create a new spec',
-    prompt: loadPrompt('mspec.spec')
+    prompt: loadPrompt('pspec.spec')
   },
-  'mspec.plan': {
+  'pspec.plan': {
     desc: 'Plan tasks for an existing spec',
-    prompt: loadPrompt('mspec.plan')
+    prompt: loadPrompt('pspec.plan')
   },
-  'mspec.implement': {
+  'pspec.implement': {
     desc: 'Implement tasks from a checklist using sub-agents',
-    prompt: loadPrompt('mspec.implement')
+    prompt: loadPrompt('pspec.implement')
   },
-  'mspec.debug': {
+  'pspec.debug': {
     desc: 'Investigate and resolve errors in the project using sub-agents',
-    prompt: loadPrompt('mspec.debug')
+    prompt: loadPrompt('pspec.debug')
   }
 };
 
@@ -462,7 +462,7 @@ function convertToOpenCodeFormat(agent: AgentDefinition): string {
 }
 
 function convertToZedFormat(agents: AgentDefinition[]): string {
-  const sections: string[] = ['# mspec Agents\n'];
+  const sections: string[] = ['# pspec Agents\n'];
   
   agents.forEach(agent => {
     sections.push(`## ${agent.name}`);
