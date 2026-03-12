@@ -26,7 +26,7 @@ PHASE 1: THE ADAPTIVE INQUIRY
 
 PHASE 2: VISUAL-FIRST DRAFTING
 
-7. Spawn an `architect` agent (definition available in your AI tool's agents directory) to design the system and generate the spec file in `.mspec/specs/` (e.g., `001-auth.md`).
+7. Spawn an `architect` agent (definition available in your AI tool's agents directory) to design the system and generate the spec file DIRECTLY in `.mspec/specs/` as a flat file (e.g., `.mspec/specs/001-auth.md`). DO NOT create any subdirectories - place the file directly in the specs folder.
 8. The spec MUST follow this structure:
    # Spec: [Feature Name]
    ## 1. Goal & Context

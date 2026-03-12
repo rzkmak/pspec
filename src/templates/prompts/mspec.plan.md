@@ -35,7 +35,7 @@ PHASE 2: SEQUENCING PROTOCOL
 
 PHASE 3: DRAFTING THE TASK LIST
 
-11. Write the tasks as a markdown checklist (`- [ ]`) in `.mspec/tasks/[spec-name].tasks.md`.
+11. Write the tasks as a markdown checklist (`- [ ]`) DIRECTLY in `.mspec/tasks/` as a flat file (e.g., `.mspec/tasks/001-feature-name.tasks.md`). DO NOT create any subdirectories - place the file directly in the tasks folder.
 12. **Sub-Agent Directives:** For complex tasks, include a 1-sentence "How-To" or "Pattern" to guide the sub-agent.
 13. Spawn a `test_planner` agent (definition available in your AI tool's agents directory) to ensure every plan includes specific tasks for writing automated tests that satisfy the Acceptance Criteria.
 
