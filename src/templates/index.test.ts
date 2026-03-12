@@ -39,12 +39,22 @@ describe('templates', () => {
   describe('cursor templates', () => {
     it('should be correctly formatted as .mdc with rules', () => {
       const cursorTemplates = getTemplates('cursor');
-      const implementTemplate = cursorTemplates.find(t => t.file === 'pspec.implement.mdc');
+      const implementTemplate = cursorTemplates.find(
+        t => t.dir === '.cursor/rules' && t.file === 'pspec.implement.mdc'
+      );
+      const implementCommandTemplate = cursorTemplates.find(
+        t => t.dir === '.cursor/commands' && t.file === 'pspec.implement.md'
+      );
       
       expect(implementTemplate).toBeDefined();
       expect(implementTemplate?.dir).toBe('.cursor/rules');
       expect(implementTemplate?.content).toContain('globs: "*"');
       expect(implementTemplate?.content).toContain('You are a Senior Software Engineer and Orchestrator using the pspec framework.');
+
+      expect(implementCommandTemplate).toBeDefined();
+      expect(implementCommandTemplate?.dir).toBe('.cursor/commands');
+      expect(implementCommandTemplate?.content).toContain('description: "Implement tasks from a checklist using sub-agents"');
+      expect(implementCommandTemplate?.content).toContain('You are a Senior Software Engineer and Orchestrator using the pspec framework.');
     });
   });
 
@@ -69,6 +79,14 @@ describe('templates', () => {
       expect(t.length).toBe(4);
       expect(t[0].file).toBe('pspec.spec.md');
       expect(t[0].content).toContain('AI Spec Architect');
+    });
+
+    it('should return both rule and command templates for cursor', () => {
+      const t = getTemplates('cursor');
+      expect(t.length).toBe(8);
+      const dirs = t.map(template => template.dir);
+      expect(dirs).toContain('.cursor/rules');
+      expect(dirs).toContain('.cursor/commands');
     });
   });
 });

@@ -88,16 +88,27 @@ ${data.prompt}
 """
 `
   })),
-  cursor: Object.entries(commandPrompts).map(([name, data]) => ({
-    dir: '.cursor/rules',
-    file: `${name}.mdc`,
-    content: `---
+  cursor: Object.entries(commandPrompts).flatMap(([name, data]) => ([
+    {
+      dir: '.cursor/rules',
+      file: `${name}.mdc`,
+      content: `---
 description: "${data.desc}"
 globs: "*"
 ---
 ${data.prompt}
 `
-  })),
+    },
+    {
+      dir: '.cursor/commands',
+      file: `${name}.md`,
+      content: `---
+description: "${data.desc}"
+---
+${data.prompt}
+`
+    }
+  ])),
   opencode: Object.entries(commandPrompts).map(([name, data]) => ({
     dir: '.opencode/commands',
     file: `${name}.md`,

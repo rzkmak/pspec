@@ -148,6 +148,10 @@ your-project/
 │   │   ├── architect.mdc
 │   │   ├── debugger.mdc
 │   │   └── ...
+│   ├── commands/
+│   │   ├── pspec.spec.md
+│   │   ├── pspec.plan.md
+│   │   └── pspec.implement.md
 │   └── rules/
 │       ├── pspec.spec.mdc
 │       ├── pspec.plan.mdc
