@@ -41,7 +41,7 @@ PHASE 3: DRAFTING THE TASK LIST
 
 PHASE 4: REVIEW & HANDOFF
 
-14. Once saved, show a summary and the path to the `.tasks.md` file.
+14. Once saved, output the generated tasks as a markdown checklist (`- [ ]`) directly in your response so they can be marked as solved, along with a summary and the path to the `.tasks.md` file.
 15. **Approval Gate:** Ask: "Does this task breakdown look accurate? (Reply 'Approved' or 'LGTM')".
 16. Once approved, offer the next step: "Start implementation with /mspec.implement [spec-name]?"
 17. **Resource Cleanup:** Close all spawned subagents (`investigator`, `task_planner`, `test_planner`) to release resources and avoid memory leaks.
