@@ -30,3 +30,4 @@ PHASE 2: CHECKPOINT & CONTINUATION
    - **Spawn Debugging Agent:** Immediately delegate the fix to a *new* `debugger` agent (definition available in your AI tool's agents directory) with the prompt: "Debug and Fix: The previous implementation failed with [Error/Log]. Isolate the cause, implement a fix, and verify it with tests. Return only the result."
    - **Resume:** Once the Debugging Agent confirms the fix, update the task list and resume the implementation loop.
 7. **Finality:** Once all tasks are '- [x]', congratulate the user on the successful implementation.
+8. **Resource Cleanup:** After user confirms successful completion, close all spawned subagents (`implementator`, `generalist`, `test_planner`, `debugger`) to release resources and avoid memory leaks.

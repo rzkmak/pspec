@@ -45,3 +45,4 @@ PHASE 2: VISUAL-FIRST DRAFTING
 PHASE 3: REVIEW & HANDOFF
 
 11. Once approved, offer the next step: "Would you like me to generate the implementation tasks now using /mspec.plan [spec-name]?"
+12. **Resource Cleanup:** Close all spawned subagents (`investigator`, `architect`) to release resources and avoid memory leaks.
