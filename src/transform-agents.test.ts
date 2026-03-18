@@ -178,9 +178,10 @@ communication:
       expect(claudeAgent.model).toBe('inherit');
       expect(claudeAgent.prompt).toContain('Design system architecture');
       expect(claudeAgent.prompt).toContain('## Capabilities');
+      expect(claudeAgent.prompt).toContain('## Tools');
       expect(claudeAgent.prompt).toContain('## Constraints');
       expect(claudeAgent.prompt).toContain('## Decision Rules');
-      expect(claudeAgent.prompt).toContain('## Token Efficiency');
+      expect(claudeAgent.prompt).toContain('## Execution Notes');
     });
 
     it('should convert investigator agent with limited tools', () => {
@@ -207,7 +208,8 @@ communication:
       
       expect(claudeAgent.name).toBe('minimal');
       expect(claudeAgent.tools).toEqual(['Read', 'Glob', 'Grep']);
-      expect(claudeAgent.prompt).toBe('');
+      expect(claudeAgent.prompt).toContain('## Tools');
+      expect(claudeAgent.prompt).not.toContain('## Constraints');
     });
   });
 
@@ -247,6 +249,7 @@ communication:
       expect(geminiCommand.description).toBe('Designs system architecture and creates comprehensive specifications');
       expect(geminiCommand.prompt).toContain('Design system architecture');
       expect(geminiCommand.prompt).toContain('## Capabilities');
+      expect(geminiCommand.prompt).toContain('## Tools');
       expect(geminiCommand.prompt).toContain('## Constraints');
     });
 
@@ -279,13 +282,13 @@ tools:
       expect(cursorContent).toContain('## architect');
       expect(cursorContent).toContain('## debugger');
       expect(cursorContent).toContain('**Description:** Designs system architecture');
-      expect(cursorContent).toContain('**Capabilities:**');
+      expect(cursorContent).toContain('## Capabilities');
       expect(cursorContent).toContain('- read_files');
-      expect(cursorContent).toContain('**Available Tools:**');
+      expect(cursorContent).toContain('## Tools');
       expect(cursorContent).toContain('- File reading (read, glob, grep)');
-      expect(cursorContent).toContain('**Constraints:**');
-      expect(cursorContent).toContain('**Decision Rules:**');
-      expect(cursorContent).toContain('**Output Format:**');
+      expect(cursorContent).toContain('## Constraints');
+      expect(cursorContent).toContain('## Decision Rules');
+      expect(cursorContent).toContain('## Output Format');
     });
 
     it('should handle agent with all tool categories', () => {
@@ -421,7 +424,7 @@ tools:
       expect(writtenPaths.some((p: string) => p.includes('codex/agents.json'))).toBe(true);
       
       // Gemini format
-      expect(writtenPaths.some((p: string) => p.includes('gemini/commands/architect.toml'))).toBe(true);
+      expect(writtenPaths.some((p: string) => p.includes('.gemini/agents/architect.toml'))).toBe(true);
       
       // Cursor format
       expect(writtenPaths.some((p: string) => p.includes('.cursorrules'))).toBe(true);

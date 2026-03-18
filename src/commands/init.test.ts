@@ -223,7 +223,7 @@ describe('initCommand agent files', () => {
     expect(architectContent).toContain('## Tools');
     expect(architectContent).toContain('## Constraints');
     expect(architectContent).toContain('## Decision Rules');
-    expect(architectContent).toContain('## Token Efficiency');
+    expect(architectContent).toContain('## Execution Notes');
   });
 
   it('should create agent definition files for gemini', async () => {
