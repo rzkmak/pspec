@@ -7,7 +7,7 @@
  * - OpenCode YAML (source) - src/templates/agents/*.yaml
  * - Claude Code Markdown - .claude/agents/*.md
  * - Codex CLI JSON - .codex/agents.json
- * - Gemini CLI TOML - .gemini/commands/*.toml
+ * - Gemini CLI TOML - .gemini/agents/*.toml
  * - Cursor - .cursorrules
  */
 
@@ -110,6 +110,113 @@ export function parseOpenCodeAgent(content: string): OpenCodeAgent {
   return yaml.load(content) as OpenCodeAgent;
 }
 
+function buildToolPromptLines(
+  tools: OpenCodeAgent['tools'],
+  target: keyof typeof toolMapping,
+  forCursor = false
+): string[] {
+  const lines: string[] = [];
+
+  if (!tools) {
+    return lines;
+  }
+
+  if (forCursor) {
+    if (tools.read) lines.push('- File reading (read, glob, grep)');
+    if (tools.modify) lines.push('- File modification (edit, write)');
+    if (tools.verify) lines.push('- Verification (bash)');
+    if (tools.delegate) lines.push('- Task delegation');
+    return lines;
+  }
+
+  if (tools.read) {
+    lines.push(`- Read: ${toolMapping[target].read.join(', ')}`);
+  }
+  if (tools.modify) {
+    lines.push(`- Modify: ${toolMapping[target].modify.join(', ')}`);
+  }
+  if (tools.verify) {
+    lines.push(`- Verify: ${toolMapping[target].verify.join(', ')}`);
+  }
+  if (tools.delegate && toolMapping[target].delegate.length > 0) {
+    lines.push(`- Delegate: ${toolMapping[target].delegate.join(', ')}`);
+  }
+
+  return lines;
+}
+
+function buildHeuristicLines(testHeuristics?: Record<string, string>): string[] {
+  const lines: string[] = [];
+
+  if (testHeuristics?.boundary) {
+    lines.push(`- Boundary: ${testHeuristics.boundary}`);
+  }
+  if (testHeuristics?.error_paths) {
+    lines.push(`- Error Paths: ${testHeuristics.error_paths}`);
+  }
+  if (testHeuristics?.integration) {
+    lines.push(`- Integration: ${testHeuristics.integration}`);
+  }
+
+  return lines;
+}
+
+function buildExecutionNotes(agent: OpenCodeAgent): string[] {
+  return [
+    ...(agent.token_efficiency || []).map(note => `- ${note}`),
+    ...(agent.guidelines || []).map(note => `- ${note}`),
+    ...(agent.pattern_matching || []).map(note => `- ${note}`),
+    ...(agent.completion_criteria || []).map(note => `- ${note}`),
+    ...buildHeuristicLines(agent.test_heuristics)
+  ];
+}
+
+function buildAgentPrompt(
+  agent: OpenCodeAgent,
+  target: keyof typeof toolMapping,
+  options: {
+    fallbackRole?: boolean;
+    toolsHeading?: string;
+    forCursor?: boolean;
+  } = {}
+): string {
+  const { fallbackRole = false, toolsHeading = '## Tools', forCursor = false } = options;
+  const sections: string[] = [];
+  const role = agent.role || (fallbackRole ? `You are an agent specialized in ${agent.description.toLowerCase()}.` : undefined);
+  const toolLines = buildToolPromptLines(agent.tools, target, forCursor);
+  const executionNotes = buildExecutionNotes(agent);
+
+  if (role) {
+    sections.push(role);
+  }
+
+  if (agent.capabilities && agent.capabilities.length > 0) {
+    sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
+  }
+
+  if (toolLines.length > 0) {
+    sections.push(`${toolsHeading}\n${toolLines.join('\n')}`);
+  }
+
+  if (agent.constraints && agent.constraints.length > 0) {
+    sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
+  }
+
+  if (agent.decision_rules && agent.decision_rules.length > 0) {
+    sections.push(`## Decision Rules\n${agent.decision_rules.map(r => `- ${r}`).join('\n')}`);
+  }
+
+  if (executionNotes.length > 0) {
+    sections.push(`## Execution Notes\n${executionNotes.join('\n')}`);
+  }
+
+  if (agent.communication?.format) {
+    sections.push(`## Output Format\n**Style:** ${agent.communication.style}\n\n${agent.communication.format}`);
+  }
+
+  return sections.join('\n\n');
+}
+
 /**
  * Convert to Claude Code format
  */
@@ -129,46 +236,7 @@ export function convertToClaudeCode(agent: OpenCodeAgent): ClaudeCodeAgent {
     tools.push(...toolMapping.claude.delegate);
   }
 
-  // Build system prompt from structured fields
-  const sections: string[] = [];
-  
-  if (agent.role) {
-    sections.push(agent.role);
-  }
-  
-  if (agent.capabilities && agent.capabilities.length > 0) {
-    sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.constraints && agent.constraints.length > 0) {
-    sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.decision_rules && agent.decision_rules.length > 0) {
-    sections.push(`## Decision Rules\n${agent.decision_rules.map(r => `- ${r}`).join('\n')}`);
-  }
-  
-  if (agent.token_efficiency && agent.token_efficiency.length > 0) {
-    sections.push(`## Token Efficiency\n${agent.token_efficiency.map(t => `- ${t}`).join('\n')}`);
-  }
-  
-  if (agent.guidelines && agent.guidelines.length > 0) {
-    sections.push(`## Guidelines\n${agent.guidelines.map(g => `- ${g}`).join('\n')}`);
-  }
-  
-  if (agent.completion_criteria && agent.completion_criteria.length > 0) {
-    sections.push(`## Completion Criteria\n${agent.completion_criteria.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.pattern_matching && agent.pattern_matching.length > 0) {
-    sections.push(`## Pattern Matching\n${agent.pattern_matching.map(p => `- ${p}`).join('\n')}`);
-  }
-  
-  if (agent.communication?.format) {
-    sections.push(`## Output Format\n${agent.communication.format}`);
-  }
-
-  const prompt = sections.join('\n\n');
+  const prompt = buildAgentPrompt(agent, 'claude');
 
   return {
     name: agent.name,
@@ -195,33 +263,10 @@ export function convertToCodex(agent: OpenCodeAgent): CodexAgent {
     tools.push(...toolMapping.codex.verify);
   }
 
-  // Build prompt
-  const sections: string[] = [];
-  
-  if (agent.role) {
-    sections.push(agent.role);
-  }
-  
-  if (agent.capabilities && agent.capabilities.length > 0) {
-    sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.constraints && agent.constraints.length > 0) {
-    sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.decision_rules && agent.decision_rules.length > 0) {
-    sections.push(`## Decision Rules\n${agent.decision_rules.map(r => `- ${r}`).join('\n')}`);
-  }
-
-  if (agent.communication?.format) {
-    sections.push(`## Output Format\n${agent.communication.format}`);
-  }
-
   return {
     name: agent.name,
     description: agent.description,
-    prompt: sections.join('\n\n'),
+    prompt: buildAgentPrompt(agent, 'codex'),
     tools: tools.length > 0 ? tools : undefined,
     model: 'o4-mini'
   };
@@ -231,42 +276,8 @@ export function convertToCodex(agent: OpenCodeAgent): CodexAgent {
  * Convert to Gemini CLI TOML format
  */
 export function convertToGemini(agent: OpenCodeAgent): GeminiCommand {
-  const sections: string[] = [];
-  
-  if (agent.role) {
-    sections.push(agent.role);
-  }
-  
-  if (agent.capabilities && agent.capabilities.length > 0) {
-    sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.constraints && agent.constraints.length > 0) {
-    sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.decision_rules && agent.decision_rules.length > 0) {
-    sections.push(`## Decision Rules\n${agent.decision_rules.map(r => `- ${r}`).join('\n')}`);
-  }
-  
-  if (agent.token_efficiency && agent.token_efficiency.length > 0) {
-    sections.push(`## Token Efficiency\n${agent.token_efficiency.map(t => `- ${t}`).join('\n')}`);
-  }
-  
-  if (agent.guidelines && agent.guidelines.length > 0) {
-    sections.push(`## Guidelines\n${agent.guidelines.map(g => `- ${g}`).join('\n')}`);
-  }
-  
-  if (agent.completion_criteria && agent.completion_criteria.length > 0) {
-    sections.push(`## Completion Criteria\n${agent.completion_criteria.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.communication?.format) {
-    sections.push(`## Output Format\n${agent.communication.format}`);
-  }
-
   // Escape TOML special characters
-  const prompt = sections.join('\n\n').replace(/"/g, '\\"');
+  const prompt = buildAgentPrompt(agent, 'gemini').replace(/"/g, '\\"');
 
   return {
     description: agent.description,
@@ -290,52 +301,8 @@ export function convertToCursor(agents: OpenCodeAgent[]): string {
     sections.push('');
     sections.push(`**Description:** ${agent.description}`);
     sections.push('');
-    
-    if (agent.role) {
-      sections.push(`**Role:** ${agent.role}`);
-      sections.push('');
-    }
-    
-    if (agent.capabilities && agent.capabilities.length > 0) {
-      sections.push('**Capabilities:**');
-      agent.capabilities.forEach(cap => {
-        sections.push(`- ${cap}`);
-      });
-      sections.push('');
-    }
-    
-    if (agent.tools) {
-      sections.push('**Available Tools:**');
-      if (agent.tools.read) sections.push('- File reading (read, glob, grep)');
-      if (agent.tools.modify) sections.push('- File modification (edit, write)');
-      if (agent.tools.verify) sections.push('- Verification (bash)');
-      if (agent.tools.delegate) sections.push('- Task delegation');
-      sections.push('');
-    }
-    
-    if (agent.constraints && agent.constraints.length > 0) {
-      sections.push('**Constraints:**');
-      agent.constraints.forEach(constraint => {
-        sections.push(`- ${constraint}`);
-      });
-      sections.push('');
-    }
-    
-    if (agent.decision_rules && agent.decision_rules.length > 0) {
-      sections.push('**Decision Rules:**');
-      agent.decision_rules.forEach(rule => {
-        sections.push(`- ${rule}`);
-      });
-      sections.push('');
-    }
-    
-    if (agent.communication?.format) {
-      sections.push('**Output Format:**');
-      sections.push('```');
-      sections.push(agent.communication.format);
-      sections.push('```');
-      sections.push('');
-    }
+    sections.push(buildAgentPrompt(agent, 'opencode', { forCursor: true }));
+    sections.push('');
     
     sections.push('---');
     sections.push('');
@@ -438,7 +405,7 @@ export async function transformAgents(
 
     // Gemini CLI format
     if (formats.includes('gemini')) {
-      const geminiDir = path.join(outputDir, 'gemini', 'commands');
+      const geminiDir = path.join(outputDir, '.gemini', 'agents');
       fs.mkdirSync(geminiDir, { recursive: true });
       
       const geminiCommand = convertToGemini(agent);

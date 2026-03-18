@@ -145,40 +145,101 @@ export function getAgent(name: AgentName): AgentDefinition {
   return yaml.load(content) as AgentDefinition;
 }
 
+function buildToolLines(tools: AgentDefinition['tools']): string[] {
+  const lines: string[] = [];
+
+  if (tools.read) {
+    lines.push('- Read: read, glob, grep');
+  }
+  if (tools.modify) {
+    lines.push('- Modify: edit, write');
+  }
+  if (tools.verify) {
+    lines.push('- Verify: bash');
+  }
+  if (tools.delegate) {
+    lines.push('- Delegate: task');
+  }
+
+  return lines;
+}
+
+function buildHeuristicLines(testHeuristics?: AgentDefinition['test_heuristics']): string[] {
+  const lines: string[] = [];
+
+  if (testHeuristics?.boundary) {
+    lines.push(`- Boundary: ${testHeuristics.boundary}`);
+  }
+  if (testHeuristics?.error_paths) {
+    lines.push(`- Error Paths: ${testHeuristics.error_paths}`);
+  }
+  if (testHeuristics?.integration) {
+    lines.push(`- Integration: ${testHeuristics.integration}`);
+  }
+
+  return lines;
+}
+
+function buildExecutionNotes(agent: AgentDefinition): string[] {
+  return [
+    ...(agent.token_efficiency || []).map(note => `- ${note}`),
+    ...(agent.guidelines || []).map(note => `- ${note}`),
+    ...(agent.pattern_matching || []).map(note => `- ${note}`),
+    ...(agent.completion_criteria || []).map(note => `- ${note}`),
+    ...buildHeuristicLines(agent.test_heuristics)
+  ];
+}
+
+function buildAgentBody(
+  agent: AgentDefinition,
+  options: {
+    includeTitle?: boolean;
+    fallbackRole?: boolean;
+    toolsHeading?: string;
+  } = {}
+): string {
+  const { includeTitle = false, fallbackRole = false, toolsHeading = '## Available Tools' } = options;
+  const sections: string[] = [];
+  const role = agent.role || (fallbackRole ? `You are an agent specialized in ${agent.description.toLowerCase()}.` : undefined);
+  const toolLines = buildToolLines(agent.tools);
+  const executionNotes = buildExecutionNotes(agent);
+
+  if (includeTitle) {
+    sections.push(`# ${agent.name.toUpperCase()}`);
+  }
+
+  if (role) {
+    sections.push(role);
+  }
+
+  if (agent.capabilities.length > 0) {
+    sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
+  }
+
+  if (toolLines.length > 0) {
+    sections.push(`${toolsHeading}\n${toolLines.join('\n')}`);
+  }
+
+  if (agent.constraints.length > 0) {
+    sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
+  }
+
+  if (agent.decision_rules && agent.decision_rules.length > 0) {
+    sections.push(`## Decision Rules\n${agent.decision_rules.map(rule => `- ${rule}`).join('\n')}`);
+  }
+
+  if (executionNotes.length > 0) {
+    sections.push(`## Execution Notes\n${executionNotes.join('\n')}`);
+  }
+
+  sections.push(`## Output Format\n**Style:** ${agent.communication.style}\n\n${agent.communication.format}`);
+
+  return sections.join('\n\n');
+}
+
 export function getAgentPrompt(name: AgentName): string {
   const agent = getAgent(name);
-  const role = agent.role || `You are a ${agent.description}`;
-  
-  // Build tools list from categorized tools
-  const toolsList: string[] = [];
-  if (agent.tools.read) {
-    toolsList.push(`- Read: read, glob, grep`);
-  }
-  if (agent.tools.modify) {
-    toolsList.push(`- Modify: edit, write`);
-  }
-  if (agent.tools.verify) {
-    toolsList.push(`- Verify: bash`);
-  }
-  if (agent.tools.delegate) {
-    toolsList.push(`- Delegate: task`);
-  }
-  
-  return `# ${agent.name.toUpperCase()}
-
-${role}
-
-## Capabilities
-${agent.capabilities.map(c => `- ${c}`).join('\n')}
-
-## Available Tools
-${toolsList.join('\n')}
-
-## Constraints
-${agent.constraints.map(c => `- ${c}`).join('\n')}
-
-## Output Format
-${agent.communication.format}`;
+  return buildAgentBody(agent, { includeTitle: true, fallbackRole: true });
 }
 
 export function listAgents(): string[] {
@@ -188,8 +249,6 @@ export function listAgents(): string[] {
 // Agent Template Format Converters
 
 function convertToClaudeFormat(agent: AgentDefinition): string {
-  const sections: string[] = [];
-  
   // Frontmatter
   const frontmatterLines = [
     `name: ${agent.name}`,
@@ -210,78 +269,8 @@ function convertToClaudeFormat(agent: AgentDefinition): string {
   if (agent.tools.delegate) {
     frontmatterLines.push(`  delegate: true`);
   }
-  
-  sections.push('---');
-  sections.push(frontmatterLines.join('\n'));
-  sections.push('---');
-  
-  // Role
-  if (agent.role) {
-    sections.push(`# Role\n${agent.role}`);
-  }
-  
-  // Capabilities
-  sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
-  
-  // Tools
-  const toolLines: string[] = [];
-  if (agent.tools.read) {
-    toolLines.push(`- Read: read, glob, grep`);
-  }
-  if (agent.tools.modify) {
-    toolLines.push(`- Modify: edit, write`);
-  }
-  if (agent.tools.verify) {
-    toolLines.push(`- Verify: bash`);
-  }
-  if (agent.tools.delegate) {
-    toolLines.push(`- Delegate: task`);
-  }
-  sections.push(`## Tools\n${toolLines.join('\n')}`);
-  
-  // Constraints
-  sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
-  
-  // Decision Rules
-  if (agent.decision_rules && agent.decision_rules.length > 0) {
-    sections.push(`## Decision Rules\n${agent.decision_rules.map(r => `- ${r}`).join('\n')}`);
-  }
-  
-  // Token Efficiency
-  if (agent.token_efficiency && agent.token_efficiency.length > 0) {
-    sections.push(`## Token Efficiency\n${agent.token_efficiency.map(t => `- ${t}`).join('\n')}`);
-  }
-  
-  // Guidelines
-  if (agent.guidelines && agent.guidelines.length > 0) {
-    sections.push(`## Guidelines\n${agent.guidelines.map(g => `- ${g}`).join('\n')}`);
-  }
-  
-  // Pattern Matching
-  if (agent.pattern_matching && agent.pattern_matching.length > 0) {
-    sections.push(`## Pattern Matching\n${agent.pattern_matching.map(p => `- ${p}`).join('\n')}`);
-  }
-  
-  // Completion Criteria
-  if (agent.completion_criteria && agent.completion_criteria.length > 0) {
-    sections.push(`## Completion Criteria\n${agent.completion_criteria.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  // Test Heuristics
-  if (agent.test_heuristics) {
-    const heuristics: string[] = [];
-    if (agent.test_heuristics.boundary) heuristics.push(`- Boundary: ${agent.test_heuristics.boundary}`);
-    if (agent.test_heuristics.error_paths) heuristics.push(`- Error Paths: ${agent.test_heuristics.error_paths}`);
-    if (agent.test_heuristics.integration) heuristics.push(`- Integration: ${agent.test_heuristics.integration}`);
-    if (heuristics.length > 0) {
-      sections.push(`## Test Heuristics\n${heuristics.join('\n')}`);
-    }
-  }
-  
-  // Communication
-  sections.push(`## Communication\n**Style:** ${agent.communication.style}\n\n**Format:**\n${agent.communication.format}`);
-  
-  return sections.join('\n\n');
+
+  return ['---', frontmatterLines.join('\n'), '---', '', buildAgentBody(agent, { toolsHeading: '## Tools' })].join('\n');
 }
 
 function convertToGeminiFormat(agent: AgentDefinition): string {
@@ -315,65 +304,7 @@ function convertToGeminiFormat(agent: AgentDefinition): string {
   // Prompt content
   lines.push('');
   lines.push('prompt = """');
-  
-  if (agent.role) {
-    lines.push(`# Role`);
-    lines.push(agent.role);
-    lines.push('');
-  }
-  
-  lines.push(`## Capabilities`);
-  agent.capabilities.forEach(c => lines.push(`- ${c}`));
-  lines.push('');
-  
-  lines.push(`## Constraints`);
-  agent.constraints.forEach(c => lines.push(`- ${c}`));
-  lines.push('');
-  
-  if (agent.decision_rules && agent.decision_rules.length > 0) {
-    lines.push(`## Decision Rules`);
-    agent.decision_rules.forEach(r => lines.push(`- ${r}`));
-    lines.push('');
-  }
-  
-  if (agent.token_efficiency && agent.token_efficiency.length > 0) {
-    lines.push(`## Token Efficiency`);
-    agent.token_efficiency.forEach(t => lines.push(`- ${t}`));
-    lines.push('');
-  }
-  
-  if (agent.guidelines && agent.guidelines.length > 0) {
-    lines.push(`## Guidelines`);
-    agent.guidelines.forEach(g => lines.push(`- ${g}`));
-    lines.push('');
-  }
-  
-  if (agent.pattern_matching && agent.pattern_matching.length > 0) {
-    lines.push(`## Pattern Matching`);
-    agent.pattern_matching.forEach(p => lines.push(`- ${p}`));
-    lines.push('');
-  }
-  
-  if (agent.completion_criteria && agent.completion_criteria.length > 0) {
-    lines.push(`## Completion Criteria`);
-    agent.completion_criteria.forEach(c => lines.push(`- ${c}`));
-    lines.push('');
-  }
-  
-  if (agent.test_heuristics) {
-    const heuristics: string[] = [];
-    if (agent.test_heuristics.boundary) heuristics.push(`- Boundary: ${agent.test_heuristics.boundary}`);
-    if (agent.test_heuristics.error_paths) heuristics.push(`- Error Paths: ${agent.test_heuristics.error_paths}`);
-    if (agent.test_heuristics.integration) heuristics.push(`- Integration: ${agent.test_heuristics.integration}`);
-    if (heuristics.length > 0) {
-      lines.push(`## Test Heuristics`);
-      heuristics.forEach(h => lines.push(h));
-      lines.push('');
-    }
-  }
-  
-  lines.push(`## Output Format`);
-  lines.push(agent.communication.format);
+  lines.push(buildAgentBody(agent, { toolsHeading: '## Tools' }));
   
   lines.push('"""');
   
@@ -403,68 +334,7 @@ function convertToCursorFormat(agent: AgentDefinition): string {
     frontmatterLines.push(`  delegate: true`);
   }
   
-  const sections: string[] = [
-    '---',
-    frontmatterLines.join('\n'),
-    '---'
-  ];
-  
-  if (agent.role) {
-    sections.push(`# Role\n${agent.role}`);
-  }
-  
-  sections.push(`## Capabilities\n${agent.capabilities.map(c => `- ${c}`).join('\n')}`);
-  
-  const toolLines: string[] = [];
-  if (agent.tools.read) {
-    toolLines.push(`- Read: read, glob, grep`);
-  }
-  if (agent.tools.modify) {
-    toolLines.push(`- Modify: edit, write`);
-  }
-  if (agent.tools.verify) {
-    toolLines.push(`- Verify: bash`);
-  }
-  if (agent.tools.delegate) {
-    toolLines.push(`- Delegate: task`);
-  }
-  sections.push(`## Tools\n${toolLines.join('\n')}`);
-  
-  sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
-  
-  if (agent.decision_rules && agent.decision_rules.length > 0) {
-    sections.push(`## Decision Rules\n${agent.decision_rules.map(r => `- ${r}`).join('\n')}`);
-  }
-  
-  if (agent.token_efficiency && agent.token_efficiency.length > 0) {
-    sections.push(`## Token Efficiency\n${agent.token_efficiency.map(t => `- ${t}`).join('\n')}`);
-  }
-  
-  if (agent.guidelines && agent.guidelines.length > 0) {
-    sections.push(`## Guidelines\n${agent.guidelines.map(g => `- ${g}`).join('\n')}`);
-  }
-  
-  if (agent.pattern_matching && agent.pattern_matching.length > 0) {
-    sections.push(`## Pattern Matching\n${agent.pattern_matching.map(p => `- ${p}`).join('\n')}`);
-  }
-  
-  if (agent.completion_criteria && agent.completion_criteria.length > 0) {
-    sections.push(`## Completion Criteria\n${agent.completion_criteria.map(c => `- ${c}`).join('\n')}`);
-  }
-  
-  if (agent.test_heuristics) {
-    const heuristics: string[] = [];
-    if (agent.test_heuristics.boundary) heuristics.push(`- Boundary: ${agent.test_heuristics.boundary}`);
-    if (agent.test_heuristics.error_paths) heuristics.push(`- Error Paths: ${agent.test_heuristics.error_paths}`);
-    if (agent.test_heuristics.integration) heuristics.push(`- Integration: ${agent.test_heuristics.integration}`);
-    if (heuristics.length > 0) {
-      sections.push(`## Test Heuristics\n${heuristics.join('\n')}`);
-    }
-  }
-  
-  sections.push(`## Communication\n**Style:** ${agent.communication.style}\n\n**Format:**\n${agent.communication.format}`);
-  
-  return sections.join('\n\n');
+  return ['---', frontmatterLines.join('\n'), '---', '', buildAgentBody(agent, { toolsHeading: '## Tools' })].join('\n');
 }
 
 function convertToOpenCodeFormat(agent: AgentDefinition): string {
@@ -478,80 +348,9 @@ function convertToZedFormat(agents: AgentDefinition[]): string {
   agents.forEach(agent => {
     sections.push(`## ${agent.name}`);
     sections.push(`${agent.description}\n`);
-    
-    if (agent.role) {
-      sections.push(`### Role`);
-      sections.push(`${agent.role}\n`);
-    }
-    
-    sections.push(`### Capabilities`);
-    agent.capabilities.forEach(c => sections.push(`- ${c}`));
+
+    sections.push(buildAgentBody(agent, { toolsHeading: '### Tools' }));
     sections.push('');
-    
-    sections.push(`### Tools`);
-    if (agent.tools.read) {
-      sections.push(`- Read: read, glob, grep`);
-    }
-    if (agent.tools.modify) {
-      sections.push(`- Modify: edit, write`);
-    }
-    if (agent.tools.verify) {
-      sections.push(`- Verify: bash`);
-    }
-    if (agent.tools.delegate) {
-      sections.push(`- Delegate: task`);
-    }
-    sections.push('');
-    
-    sections.push(`### Constraints`);
-    agent.constraints.forEach(c => sections.push(`- ${c}`));
-    sections.push('');
-    
-    if (agent.decision_rules && agent.decision_rules.length > 0) {
-      sections.push(`### Decision Rules`);
-      agent.decision_rules.forEach(r => sections.push(`- ${r}`));
-      sections.push('');
-    }
-    
-    if (agent.token_efficiency && agent.token_efficiency.length > 0) {
-      sections.push(`### Token Efficiency`);
-      agent.token_efficiency.forEach(t => sections.push(`- ${t}`));
-      sections.push('');
-    }
-    
-    if (agent.guidelines && agent.guidelines.length > 0) {
-      sections.push(`### Guidelines`);
-      agent.guidelines.forEach(g => sections.push(`- ${g}`));
-      sections.push('');
-    }
-    
-    if (agent.pattern_matching && agent.pattern_matching.length > 0) {
-      sections.push(`### Pattern Matching`);
-      agent.pattern_matching.forEach(p => sections.push(`- ${p}`));
-      sections.push('');
-    }
-    
-    if (agent.completion_criteria && agent.completion_criteria.length > 0) {
-      sections.push(`### Completion Criteria`);
-      agent.completion_criteria.forEach(c => sections.push(`- ${c}`));
-      sections.push('');
-    }
-    
-    if (agent.test_heuristics) {
-      const heuristics: string[] = [];
-      if (agent.test_heuristics.boundary) heuristics.push(`- Boundary: ${agent.test_heuristics.boundary}`);
-      if (agent.test_heuristics.error_paths) heuristics.push(`- Error Paths: ${agent.test_heuristics.error_paths}`);
-      if (agent.test_heuristics.integration) heuristics.push(`- Integration: ${agent.test_heuristics.integration}`);
-      if (heuristics.length > 0) {
-        sections.push(`### Test Heuristics`);
-        heuristics.forEach(h => sections.push(h));
-        sections.push('');
-      }
-    }
-    
-    sections.push(`### Output Format`);
-    sections.push(`**Style:** ${agent.communication.style}\n`);
-    sections.push(`${agent.communication.format}\n`);
   });
   
   return sections.join('\n');

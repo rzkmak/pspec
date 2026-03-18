@@ -1,5 +1,8 @@
 import { getTemplates, templates, getAgent, getAgentPrompt, listAgents, AVAILABLE_AGENTS, getAgentTemplates } from './index';
 
+const wordCount = (text: string) => text.trim().split(/\s+/).length;
+const estimateTokens = (text: string) => Math.ceil(text.length / 4);
+
 describe('templates', () => {
   it('should have templates for all supported agents', () => {
     const agents = ['claude', 'gemini', 'cursor', 'opencode'];
@@ -88,6 +91,45 @@ describe('templates', () => {
       expect(dirs).toContain('.cursor/rules');
       expect(dirs).toContain('.cursor/commands');
     });
+
+    it('should keep command prompts compact and direct-first', () => {
+      const templates = getTemplates('opencode');
+      const specs = [
+        {
+          file: 'pspec.spec.md',
+          maxWords: 220,
+          required: ['Draft immediately when the request is concrete.', 'Ask 0-3 targeted questions only when ambiguity would materially change the spec.'],
+          forbidden: ['3 to 7', 'Approval Gate 1', 'Resource Cleanup']
+        },
+        {
+          file: 'pspec.plan.md',
+          maxWords: 320,
+          required: ['Default to one planning pass.', 'Use `investigator` only when codebase patterns are unclear.'],
+          forbidden: ['Spawn a `test_planner` agent', 'Resource Cleanup']
+        },
+        {
+          file: 'pspec.implement.md',
+          maxWords: 300,
+          required: ['Default to direct execution.', 'Verify by risk, not by checkbox:'],
+          forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task']
+        },
+        {
+          file: 'pspec.debug.md',
+          maxWords: 250,
+          required: ['Start with direct triage.', 'Use parallel investigation only for distinct hypotheses'],
+          forbidden: ['grep_search', 'Resource Cleanup']
+        }
+      ];
+
+      specs.forEach(({ file, maxWords, required, forbidden }) => {
+        const template = templates.find(t => t.file === file);
+
+        expect(template).toBeDefined();
+        expect(wordCount(template!.content)).toBeLessThan(maxWords);
+        required.forEach(snippet => expect(template!.content).toContain(snippet));
+        forbidden.forEach(snippet => expect(template!.content).not.toContain(snippet));
+      });
+    });
   });
 });
 
@@ -154,6 +196,8 @@ describe('agents', () => {
       expect(prompt).toContain('## Capabilities');
       expect(prompt).toContain('## Available Tools');
       expect(prompt).toContain('## Constraints');
+      expect(prompt).toContain('## Decision Rules');
+      expect(prompt).toContain('## Execution Notes');
       expect(prompt).toContain('## Output Format');
     });
 
@@ -164,8 +208,20 @@ describe('agents', () => {
         expect(prompt).toContain('## Capabilities');
         expect(prompt).toContain('## Available Tools');
         expect(prompt).toContain('## Constraints');
+        expect(prompt).toContain('## Decision Rules');
+        expect(prompt).toContain('## Execution Notes');
         expect(prompt).toContain('## Output Format');
       });
+    });
+
+    it('should keep compiled prompts within lean token budgets', () => {
+      const perAgentBudget = 380;
+      const totalBudget = 2300;
+
+      const tokenCounts = AVAILABLE_AGENTS.map(agentName => estimateTokens(getAgentPrompt(agentName)));
+
+      tokenCounts.forEach(count => expect(count).toBeLessThan(perAgentBudget));
+      expect(tokenCounts.reduce((sum, count) => sum + count, 0)).toBeLessThan(totalBudget);
     });
   });
 });
@@ -225,15 +281,38 @@ describe('getAgentTemplates', () => {
     const generalistTemplate = templates.find(t => t.file === 'generalist.md');
     
     expect(generalistTemplate?.content).toContain('## Decision Rules');
-    expect(generalistTemplate?.content).toContain('## Token Efficiency');
-    expect(generalistTemplate?.content).toContain('## Pattern Matching');
+    expect(generalistTemplate?.content).toContain('## Execution Notes');
+    expect(generalistTemplate?.content).toContain('Match naming and export conventions exactly');
   });
 
   it('should include test heuristics for test_planner in gemini format', () => {
     const templates = getAgentTemplates('gemini');
     const testPlannerTemplate = templates.find(t => t.file === 'test_planner.toml');
     
-    expect(testPlannerTemplate?.content).toContain('Test Heuristics');
+    expect(testPlannerTemplate?.content).toContain('Boundary:');
+  });
+
+  it('should match snapshots for representative agent outputs across targets', () => {
+    const targets = ['claude', 'gemini', 'cursor', 'opencode'] as const;
+    const agents = ['architect', 'generalist', 'test_planner'] as const;
+
+    const snapshots = Object.fromEntries(
+      targets.map(target => {
+        const templates = getAgentTemplates(target);
+        return [
+          target,
+          Object.fromEntries(
+            agents.map(agentName => {
+              const ext = target === 'gemini' ? 'toml' : target === 'cursor' ? 'mdc' : 'md';
+              const template = templates.find(t => t.file === `${agentName}.${ext}`);
+              return [agentName, template?.content];
+            })
+          )
+        ];
+      })
+    );
+
+    expect(snapshots).toMatchSnapshot();
   });
 
   describe('edge cases', () => {
@@ -248,7 +327,7 @@ describe('getAgentTemplates', () => {
       expect(taskPlannerTemplate?.content).toContain('## Capabilities');
       expect(taskPlannerTemplate?.content).toContain('## Constraints');
       // Should have guidelines since it's defined
-      expect(taskPlannerTemplate?.content).toContain('## Guidelines');
+      expect(taskPlannerTemplate?.content).toContain('## Execution Notes');
     });
 
     it('should handle agent with empty tool categories', () => {
@@ -277,7 +356,7 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const generalistTemplate = templates.find(t => t.file === 'generalist.md');
-      expect(generalistTemplate?.content).toContain('## Pattern Matching');
+      expect(generalistTemplate?.content).toContain('Match local test structure and assertion style');
     });
 
     it('should handle agent with completion_criteria', () => {
@@ -289,7 +368,7 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const implementorTemplate = templates.find(t => t.file === 'implementator.md');
-      expect(implementorTemplate?.content).toContain('## Completion Criteria');
+      expect(implementorTemplate?.content).toContain('Relevant existing tests still pass');
     });
 
     it('should handle agent with test_heuristics', () => {
@@ -300,7 +379,7 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const testPlannerTemplate = templates.find(t => t.file === 'test_planner.md');
-      expect(testPlannerTemplate?.content).toContain('## Test Heuristics');
+      expect(testPlannerTemplate?.content).toContain('Boundary:');
     });
 
     it('should handle agent with role field', () => {
@@ -312,7 +391,7 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const architectTemplate = templates.find(t => t.file === 'architect.md');
-      expect(architectTemplate?.content).toContain('# Role');
+      expect(architectTemplate?.content).toContain('Design the minimum architecture needed');
     });
 
     it('should handle agent without role field', () => {
@@ -323,7 +402,7 @@ describe('getAgentTemplates', () => {
       
       // getAgentPrompt should use description as fallback
       const prompt = getAgentPrompt('task_planner');
-      expect(prompt).toContain('You are a');
+      expect(prompt).toContain('You are an agent specialized in');
     });
 
     it('should generate valid TOML for gemini format without syntax errors', () => {
@@ -377,6 +456,8 @@ describe('getAgentTemplates', () => {
         expect(prompt).toContain('## Capabilities');
         expect(prompt).toContain('## Available Tools');
         expect(prompt).toContain('## Constraints');
+        expect(prompt).toContain('## Decision Rules');
+        expect(prompt).toContain('## Execution Notes');
         expect(prompt).toContain('## Output Format');
         
         // Should not be empty
