@@ -98,19 +98,19 @@ describe('templates', () => {
         {
           file: 'pspec.spec.md',
           maxWords: 220,
-          required: ['Draft immediately when the request is concrete.', 'Ask 0-3 targeted questions only when ambiguity would materially change the spec.'],
+          required: ['Draft immediately when the request is concrete.', 'Ask 0-3 targeted questions only when ambiguity would materially change the spec.', '<epoch-ms>-<slug>.md'],
           forbidden: ['3 to 7', 'Approval Gate 1', 'Resource Cleanup']
         },
         {
           file: 'pspec.plan.md',
           maxWords: 320,
-          required: ['Default to one planning pass.', 'Use `investigator` only when codebase patterns are unclear.'],
+          required: ['Default to one planning pass.', 'Use `investigator` only when codebase patterns are unclear.', 'reuse its `<epoch-ms>-<slug>` stem'],
           forbidden: ['Spawn a `test_planner` agent', 'Resource Cleanup']
         },
         {
           file: 'pspec.implement.md',
           maxWords: 300,
-          required: ['Default to direct execution.', 'Verify by risk, not by checkbox:'],
+          required: ['Default to direct execution.', 'Verify by risk, not by checkbox:', 'same `<epoch-ms>-<slug>` stem'],
           forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task']
         },
         {

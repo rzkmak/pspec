@@ -11,7 +11,7 @@
 It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, and OpenCode.
 
 ## Philosophy
-- **Token Efficient:** Uses a single plan `*.md` and task `*.task.md` for context instead of massive chat histories.
+- **Token Efficient:** Uses a single spec `*.md` and task `*.tasks.md` file for context instead of massive chat histories.
 - **Visual-First:** Encourages Mermaid.js diagrams over long, confusing paragraphs.
 - **Data Dictionaries:** Uses simple Markdown tables for data modeling instead of strict, unreadable JSON schemas.
 - **Sub-Agent Orchestration:** It instructs your main AI agent to act as an orchestrator, delegating implementation to parallel sub-agents to preserve your context window.
@@ -52,7 +52,7 @@ Use the native slash command in your AI agent to start drafting a specification.
 /pspec.spec Let's create a spec for a new authentication feature.
 ```
 - **Context Gathering:** The AI will automatically look at your existing codebase to understand your current architecture before answering.
-- **The Inquiry:** It will not guess. Instead, it will ask you multiple-choice questions to define the core logic, edge cases, and data models. 
+- **The Inquiry:** It will not guess. Instead, it will ask you multiple-choice questions to define the core logic, edge cases, and data models.
   
   *Example Interaction:*
   > **AI:** Q1: How should we handle session storage?
@@ -63,7 +63,7 @@ Use the native slash command in your AI agent to start drafting a specification.
   > **You:** Q1: A
   
 - **Approval Checkpoint 1:** After you answer, the AI will ask: *"Are you ready for me to draft the specification based on these answers? (Please reply 'Approved' or 'LGTM')"*
-- **Drafting:** Once approved, it will generate a highly structured `.pspec/specs/001-auth.md` file featuring a Mermaid diagram and an Acceptance Criteria checklist.
+- **Drafting:** Once approved, it will generate a highly structured `.pspec/specs/1742451234567-auth.md` file featuring a Mermaid diagram and an Acceptance Criteria checklist.
 - **Approval Checkpoint 2:** It will output the file path for your review and wait for you to say **"Approved"** or **"LGTM"** again before automatically offering the next command.
 
 ### Step 3: Scaffold the Plan
@@ -71,10 +71,11 @@ Once you are happy with the spec, use the planning command to break it down.
 
 **Command:**
 ```text
-/pspec.plan 001-auth
+/pspec.plan 1742451234567-auth
 ```
-- If you don't provide a spec name, the AI will ask you which spec you want to plan.
-- **Sequencing:** The AI will read the spec and create a strict, logically sequenced checklist in `.pspec/tasks/001-auth.tasks.md` (Data -> Logic -> UI -> Edge Cases -> Automated Tests).
+- If you don't provide a spec name, the AI will choose the most relevant recent spec.
+- **Sequencing:** The AI will read the spec and create a strict, logically sequenced checklist in `.pspec/tasks/1742451234567-auth.tasks.md` (Data -> Logic -> UI -> Edge Cases -> Automated Tests).
+- **Naming:** Spec files use the format `<epoch-ms>-<slug>.md`, and task files reuse the same stem as `<epoch-ms>-<slug>.tasks.md`.
 - It will show you the exact file path so you can review the generated tasks and ask for your approval before proceeding.
 
 ### Step 4: Implement and Execute
@@ -82,9 +83,9 @@ Once the checklist is generated, hand the wheel over to the AI to orchestrate th
 
 **Command:**
 ```text
-/pspec.implement 001-auth
+/pspec.implement 1742451234567-auth
 ```
-- If you don't provide a spec name, the AI will ask you which spec you want to implement.
+- If you don't provide a spec name, the AI will use the most recently updated matching task file.
 - **Sub-Agent Delegation:** To prevent context bloat, the AI will read the first `- [ ]` task and delegate the actual coding to a sub-agent.
 - **Parallelization:** If tasks are independent (e.g., backend and frontend), it will spawn multiple sub-agents to execute them simultaneously!
 - **Empirical Verification:** The sub-agent will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
@@ -113,9 +114,9 @@ your-project/
 ├── .pspec/
 │   ├── pspec.json                 # Auto-generated config
 │   ├── specs/
-│   │   └── 001-auth.md            # The "Intent" (Markdown/Mermaid)
+│   │   └── 1742451234567-auth.md  # The "Intent" (Markdown/Mermaid)
 │   └── tasks/
-│       └── 001-auth.tasks.md      # The "Execution" (Checklists)
+│       └── 1742451234567-auth.tasks.md # The "Execution" (Checklists)
 ├── .opencode/                     # Default agent integration
 │   ├── agents/
 │   │   ├── architect.md

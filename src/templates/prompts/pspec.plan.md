@@ -13,11 +13,13 @@ When asked to /pspec.plan, use this planning policy:
 7. Group adjacent trivial work into one task when it shares files, verification, or implementation context.
 8. Link every task to a spec section or acceptance criterion.
 9. Sequence tasks to minimize blockers. Use setup -> logic -> integration -> validation -> tests when that ordering fits.
-10. Write the checklist directly to `.pspec/tasks/` as a flat `.tasks.md` file.
-11. Include short pattern notes only for tasks where the expected implementation approach is non-obvious.
-12. Make sure the plan includes the smallest set of automated tests needed to satisfy the acceptance criteria.
-13. Return:
+10. Write the checklist directly to `.pspec/tasks/` as `<spec-stem>.tasks.md`.
+11. When planning from an existing spec, reuse its `<epoch-ms>-<slug>` stem so related files stay paired.
+12. Otherwise name the task file `<epoch-ms>-<slug>.tasks.md`.
+13. Include short pattern notes only for tasks where the expected implementation approach is non-obvious.
+14. Make sure the plan includes the smallest set of automated tests needed to satisfy the acceptance criteria.
+15. Return:
     - the saved task file path
     - the markdown checklist
     - brief sequencing notes or key risks only when useful
-14. Ask for approval only once, after the task file is written. Then offer `/pspec.implement` as the next step.
+16. Ask for approval only once, after the task file is written. Then offer `/pspec.implement` as the next step.
