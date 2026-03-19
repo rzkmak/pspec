@@ -10,11 +10,7 @@ export function createProgram() {
   program
     .name('pspec')
     .description('Minimalist Spec-Driven Development CLI')
-    .version(pkg.version);
-
-  program
-    .command('init')
-    .description('Initialize pspec in the current directory')
+    .version(pkg.version)
     .action(initCommand);
 
   return program;

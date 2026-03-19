@@ -23,7 +23,7 @@ It is designed to work seamlessly alongside your favorite AI coding agents: Clau
 We recommend running `pspec` directly via `npx` so you always get the freshest, most up-to-date prompts for your AI agents when initializing a new project.
 
 ```bash
-npx pspec@latest init
+npx pspec@latest
 ```
 
 ---
@@ -35,7 +35,7 @@ The workflow follows a simple three-step loop: **Initialize -> Plan -> Implement
 ### Step 1: Initialize the Project
 Run this command in the root of your project:
 ```bash
-npx pspec@latest init
+npx pspec@latest
 ```
 - It will prompt you for your preferred AI agent (Claude, Gemini, Cursor, etc.).
 - It will create the `.pspec/specs/` and `.pspec/tasks/` directories.
