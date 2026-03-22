@@ -1,5 +1,9 @@
 # pspec
 
+[![npm version](https://img.shields.io/npm/v/pspec.svg)](https://www.npmjs.com/package/pspec)
+[![CI](https://github.com/rzkmak/pspec/actions/workflows/ci.yml/badge.svg)](https://github.com/rzkmak/pspec/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/rzkmak/pspec)](./LICENSE)
+
 <p align="center">
   <img src="./pspec-logo.jpg" alt="pspec logo" width="220" />
 </p>
@@ -116,6 +120,13 @@ If you want the agent to package current work for you, use one of the git helper
 - `/pspec.commit-raise-pr` creates a new inferred branch name, stages all safe files, commits them, pushes that branch, and opens a PR against the repository default branch with `gh`.
 - `/pspec.commit-current-branch` stays on the current branch, stages all safe files, commits them, and pushes to that branch.
 - Both commands infer the commit message from the staged diff after staging and recent commit style, skip likely secret files unless explicitly requested, and use `gh` for GitHub operations.
+
+
+### Release Publishing
+- Add an `NPM_TOKEN` repository secret with publish access to the npm package.
+- Publishing is automated by `.github/workflows/npm-publish.yml`.
+- When a GitHub Release is published, the workflow installs dependencies, runs `npm test`, validates that the release tag matches `package.json` (`v0.0.7` and `0.0.7` both work), and then runs `npm publish`.
+- Stable releases publish with the npm dist-tag `latest`; prerelease versions such as `1.2.3-beta.1` publish to the matching dist-tag like `beta`.
 
 
 ---

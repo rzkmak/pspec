@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest an improvement for pspec.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea for pspec.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What workflow, limitation, or pain point are you trying to address?
+      placeholder: Describe the problem or unmet need.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to happen?
+      placeholder: Describe the change you want.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you evaluate?
+      placeholder: Optional.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Share examples, mockups, links, or related specs.
+      placeholder: Optional.
