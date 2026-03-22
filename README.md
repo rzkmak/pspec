@@ -65,6 +65,7 @@ Use the native slash command in your AI agent to start drafting a specification.
 - **Approval Checkpoint 1:** After you answer, the AI will ask: *"Are you ready for me to draft the specification based on these answers? (Please reply 'Approved' or 'LGTM')"*
 - **Drafting:** Once approved, it will generate a highly structured `.pspec/specs/1742451234567-auth.md` file featuring a Mermaid diagram and an Acceptance Criteria checklist.
 - **Approval Checkpoint 2:** It will output the file path for your review and wait for you to say **"Approved"** or **"LGTM"** again before automatically offering the next command.
+- **Next Command Hint:** It should also give you a copy-pasteable follow-up command like `/pspec.plan 1742451234567-auth` so you do not need to retype the generated stem manually.
 
 ### Step 3: Scaffold the Plan
 Once you are happy with the spec, use the planning command to break it down.
@@ -76,6 +77,7 @@ Once you are happy with the spec, use the planning command to break it down.
 - If you don't provide a spec name, the AI will choose the most relevant recent spec.
 - **Sequencing:** The AI will read the spec and create a strict, logically sequenced checklist in `.pspec/tasks/1742451234567-auth.tasks.md` (Data -> Logic -> UI -> Edge Cases -> Automated Tests).
 - **Naming:** Spec files use the format `<epoch-ms>-<slug>.md`, and task files reuse the same stem as `<epoch-ms>-<slug>.tasks.md`.
+- **Next Command Hint:** After writing the task file, it should suggest a ready-to-run follow-up like `/pspec.implement 1742451234567-auth`.
 - It will show you the exact file path so you can review the generated tasks and ask for your approval before proceeding.
 
 ### Step 4: Implement and Execute
@@ -103,6 +105,18 @@ If you encounter bugs, compile errors, or failing tests (whether during implemen
 - **Parallel Hypotheses:** If there are multiple potential causes, it can investigate them in parallel to find the solution faster!
 - **PSpec-Aware:** It will check if the bug is related to any active tasks or existing specs to ensure consistency.
 
+### Step 6: Commit Helpers
+If you want the agent to package staged work for you, use one of the git helper commands.
+
+**Commands:**
+```text
+/pspec.commit-raise-pr
+/pspec.commit-current-branch
+```
+- `/pspec.commit-raise-pr` creates a new inferred branch name, commits only staged files, pushes that branch, and opens a PR against the repository default branch.
+- `/pspec.commit-current-branch` stays on the current branch, commits only staged files, and pushes to that branch.
+- Both commands infer the commit message from the staged diff and recent commit style, and they avoid staging extra files automatically.
+
 
 ---
 
@@ -123,6 +137,8 @@ your-project/
 │   │   ├── debugger.md
 │   │   └── ...
 │   └── commands/
+│       ├── pspec.commit-current-branch.md
+│       ├── pspec.commit-raise-pr.md
 │       ├── pspec.spec.md
 │       ├── pspec.plan.md
 │       └── pspec.implement.md
@@ -132,6 +148,8 @@ your-project/
 │   │   ├── debugger.toml
 │   │   └── ...
 │   └── commands/
+│       ├── pspec.commit-current-branch.toml
+│       ├── pspec.commit-raise-pr.toml
 │       ├── pspec.spec.toml
 │       ├── pspec.plan.toml
 │       └── pspec.implement.toml
@@ -141,6 +159,8 @@ your-project/
 │   │   ├── debugger.md
 │   │   └── ...
 │   └── commands/
+│       ├── pspec.commit-current-branch.md
+│       ├── pspec.commit-raise-pr.md
 │       ├── pspec.spec.md
 │       ├── pspec.plan.md
 │       └── pspec.implement.md
@@ -150,10 +170,14 @@ your-project/
 │   │   ├── debugger.mdc
 │   │   └── ...
 │   ├── commands/
+│   │   ├── pspec.commit-current-branch.md
+│   │   ├── pspec.commit-raise-pr.md
 │   │   ├── pspec.spec.md
 │   │   ├── pspec.plan.md
 │   │   └── pspec.implement.md
 │   └── rules/
+│       ├── pspec.commit-current-branch.mdc
+│       ├── pspec.commit-raise-pr.mdc
 │       ├── pspec.spec.mdc
 │       ├── pspec.plan.mdc
 │       └── pspec.implement.mdc

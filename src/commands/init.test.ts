@@ -29,22 +29,26 @@ describe('initCommand', () => {
   });
 
   const providers = [
-    { agent: 'claude', expectedFiles: ['.claude/commands/pspec.spec.md', '.claude/commands/pspec.plan.md', '.claude/commands/pspec.implement.md', '.claude/commands/pspec.debug.md'] },
-    { agent: 'gemini', expectedFiles: ['.gemini/commands/pspec.spec.toml', '.gemini/commands/pspec.plan.toml', '.gemini/commands/pspec.implement.toml', '.gemini/commands/pspec.debug.toml'] },
+    { agent: 'claude', expectedFiles: ['.claude/commands/pspec.commit-current-branch.md', '.claude/commands/pspec.commit-raise-pr.md', '.claude/commands/pspec.spec.md', '.claude/commands/pspec.plan.md', '.claude/commands/pspec.implement.md', '.claude/commands/pspec.debug.md'] },
+    { agent: 'gemini', expectedFiles: ['.gemini/commands/pspec.commit-current-branch.toml', '.gemini/commands/pspec.commit-raise-pr.toml', '.gemini/commands/pspec.spec.toml', '.gemini/commands/pspec.plan.toml', '.gemini/commands/pspec.implement.toml', '.gemini/commands/pspec.debug.toml'] },
     {
       agent: 'cursor',
       expectedFiles: [
+        '.cursor/rules/pspec.commit-current-branch.mdc',
+        '.cursor/rules/pspec.commit-raise-pr.mdc',
         '.cursor/rules/pspec.spec.mdc',
         '.cursor/rules/pspec.plan.mdc',
         '.cursor/rules/pspec.implement.mdc',
         '.cursor/rules/pspec.debug.mdc',
+        '.cursor/commands/pspec.commit-current-branch.md',
+        '.cursor/commands/pspec.commit-raise-pr.md',
         '.cursor/commands/pspec.spec.md',
         '.cursor/commands/pspec.plan.md',
         '.cursor/commands/pspec.implement.md',
         '.cursor/commands/pspec.debug.md'
       ]
     },
-    { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] }
+    { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.commit-current-branch.md', '.opencode/commands/pspec.commit-raise-pr.md', '.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] }
   ];
 
   providers.forEach(({ agent, expectedFiles }) => {

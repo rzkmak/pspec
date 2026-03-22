@@ -15,6 +15,8 @@ describe('report-template-budgets', () => {
     const rows = getCommandPromptBudgets();
 
     expect(rows.map(row => row.name)).toEqual([
+      'pspec.commit-current-branch.md',
+      'pspec.commit-raise-pr.md',
       'pspec.debug.md',
       'pspec.implement.md',
       'pspec.plan.md',

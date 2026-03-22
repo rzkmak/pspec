@@ -51,6 +51,14 @@ const loadPrompt = (name: string): string => {
 };
 
 const commandPrompts: Record<string, { desc: string, prompt: string }> = {
+  'pspec.commit-current-branch': {
+    desc: 'Commit staged work on the current branch and push',
+    prompt: loadPrompt('pspec.commit-current-branch')
+  },
+  'pspec.commit-raise-pr': {
+    desc: 'Commit staged work on a new branch and open a PR',
+    prompt: loadPrompt('pspec.commit-raise-pr')
+  },
   'pspec.spec': {
     desc: 'Start an inquiry to create a new spec',
     prompt: loadPrompt('pspec.spec')
