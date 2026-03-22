@@ -110,14 +110,14 @@ describe('templates', () => {
         {
           file: 'pspec.commit-current-branch.md',
           maxWords: 210,
-          required: ['Stay on the current branch.', 'Stage all safe tracked and untracked files before committing.', 'push with upstream tracking', 'Use `gh` CLI for every GitHub operation in pspec.'],
-          forbidden: ['Do you want me to', 'Commit staged files only.']
+          required: ['Commit the current work on the current branch now.', 'Stay on the current branch.', 'Stage all safe tracked and untracked files before committing.', 'push with upstream tracking', 'Use `gh` CLI for every GitHub operation in pspec.'],
+          forbidden: ['Do you want me to', 'Commit staged files only.', 'When asked to /pspec.commit-current-branch']
         },
         {
           file: 'pspec.commit-raise-pr.md',
           maxWords: 240,
-          required: ['Use `gh` CLI for every GitHub operation in pspec', 'Create a new branch from the current HEAD before committing.', 'Infer a concise kebab-case branch name', 'Stage all safe tracked and untracked files before committing.', 'Create a PR against the detected default branch'],
-          forbidden: ['Commit staged files only.', 'ask for permission before pushing']
+          required: ['Package the current work into a new branch and open a PR now.', 'Use `gh` CLI for every GitHub operation in pspec', 'Create a new branch from the current HEAD before committing.', 'Infer a concise kebab-case branch name', 'Stage all safe tracked and untracked files before committing.', 'Create a PR against the detected default branch'],
+          forbidden: ['Commit staged files only.', 'ask for permission before pushing', 'When asked to /pspec.commit-raise-pr']
         },
         {
           file: 'pspec.spec.md',
