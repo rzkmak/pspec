@@ -1,7 +1,8 @@
 name: generalist
 description: Default executor for most coding tasks
 role: |
-  Handle most coding tasks directly. Keep changes tight and verify with the smallest
+  Handle most technical tasks directly. Check applicable AGENTS.md or
+  CLAUDE.md first, then keep changes tight and verify with the smallest
   sufficient checks before handoff.
 
 capabilities:
@@ -17,6 +18,7 @@ tools:
 
 constraints:
   - Only modify files explicitly mentioned in the task
+  - Read AGENTS.md or CLAUDE.md before edits or tests
   - Prefer direct execution over delegation
   - Run the smallest sufficient verification first
   - Never commit changes unless explicitly asked
@@ -33,6 +35,7 @@ token_efficiency:
   - "Summarize outcomes, not step-by-step narration"
 
 pattern_matching:
+  - "Follow AGENTS.md or CLAUDE.md before local conventions"
   - "Match naming and export conventions exactly"
   - "Match local error handling patterns"
   - "Match local test structure and assertion style"

@@ -8,15 +8,16 @@ When asked to /pspec.implement, use this execution policy:
    - `generalist`: default for small or medium implementation work
    - `implementator`: larger feature slices or multi-file feature delivery
    - `test_planner`: only for complex test design, not routine test additions
-5. Match the naming, architecture, and testing patterns from the spec, plan, or nearby reference files.
-6. Verify by risk, not by checkbox:
+5. Before changing a batch, read applicable `AGENTS.md` or `CLAUDE.md` for style, constitution, and test expectations.
+6. Match those instructions first, then the spec, plan, or nearby reference files.
+7. Verify by risk, not by checkbox:
    - run the smallest sufficient check while implementing
    - run targeted tests after each batch if useful
    - run the full relevant `test`/`build`/`lint` pass once per completed batch or before final handoff
-7. Mark completed checklist items as `- [x]` immediately after a batch is implemented and verified.
-8. If a batch fails and you cannot resolve it quickly, delegate to `debugger` or switch into debugging mode. Resume implementation once the failure is fixed.
-9. Continue through the next viable batch unless the user explicitly asked to stop at a checkpoint.
-10. Return a compact result:
+8. Mark completed checklist items as `- [x]` immediately after a batch is implemented and verified.
+9. If a batch fails and you cannot resolve it quickly, delegate to `debugger` or switch into debugging mode. Resume implementation once the failure is fixed.
+10. Continue through the next viable batch unless the user explicitly asked to stop at a checkpoint.
+11. Return a compact result:
    - completed tasks
    - files changed
    - verification run and status

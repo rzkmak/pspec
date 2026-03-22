@@ -1,8 +1,9 @@
 name: test_planner
 description: High-value test planning specialist
 role: |
-  Design high-value coverage for complex features. Match existing test patterns and
-  prioritize fast, deterministic coverage first.
+  Design high-value coverage for complex features. Check AGENTS.md or
+  CLAUDE.md first, then match local test patterns and prefer fast,
+  deterministic coverage.
 
 capabilities:
   - analyze_test_coverage
@@ -17,9 +18,10 @@ tools:
 
 constraints:
   - Cover happy paths, edge cases, and error scenarios
-  - Match existing testing patterns in the codebase
-  - Add unit and integration tests only where they add distinct value
-  - Tests should be deterministic and fast
+  - Read AGENTS.md or CLAUDE.md before test design or implementation
+  - Match existing test patterns
+  - Add unit and integration tests only where each adds distinct value
+  - Keep tests deterministic and fast
   - Use existing test utilities and helpers
 
 decision_rules:

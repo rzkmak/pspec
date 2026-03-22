@@ -106,16 +106,16 @@ If you encounter bugs, compile errors, or failing tests (whether during implemen
 - **PSpec-Aware:** It will check if the bug is related to any active tasks or existing specs to ensure consistency.
 
 ### Step 6: Commit Helpers
-If you want the agent to package staged work for you, use one of the git helper commands.
+If you want the agent to package current work for you, use one of the git helper commands.
 
 **Commands:**
 ```text
 /pspec.commit-raise-pr
 /pspec.commit-current-branch
 ```
-- `/pspec.commit-raise-pr` creates a new inferred branch name, commits only staged files, pushes that branch, and opens a PR against the repository default branch.
-- `/pspec.commit-current-branch` stays on the current branch, commits only staged files, and pushes to that branch.
-- Both commands infer the commit message from the staged diff and recent commit style, and they avoid staging extra files automatically.
+- `/pspec.commit-raise-pr` creates a new inferred branch name, stages all safe files, commits them, pushes that branch, and opens a PR against the repository default branch with `gh`.
+- `/pspec.commit-current-branch` stays on the current branch, stages all safe files, commits them, and pushes to that branch.
+- Both commands infer the commit message from the staged diff after staging and recent commit style, skip likely secret files unless explicitly requested, and use `gh` for GitHub operations.
 
 
 ---

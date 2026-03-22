@@ -26,7 +26,7 @@ describe('templates', () => {
       expect(specTemplate?.content).toContain('You are an AI Spec Architect using the pspec framework.');
 
       expect(commitTemplate).toBeDefined();
-      expect(commitTemplate?.content).toContain('description: "Commit staged work on a new branch and open a PR"');
+      expect(commitTemplate?.content).toContain('description: "Commit current work on a new branch and open a PR"');
       expect(commitTemplate?.content).toContain('You are a Git workflow assistant using the pspec framework.');
     });
   });
@@ -44,7 +44,7 @@ describe('templates', () => {
       expect(planTemplate?.content).toContain('You are an AI Technical Lead using the pspec framework.');
 
       expect(currentBranchTemplate).toBeDefined();
-      expect(currentBranchTemplate?.content).toContain('description = "Commit staged work on the current branch and push"');
+      expect(currentBranchTemplate?.content).toContain('description = "Commit current work on the current branch and push"');
     });
   });
 
@@ -110,14 +110,14 @@ describe('templates', () => {
         {
           file: 'pspec.commit-current-branch.md',
           maxWords: 210,
-          required: ['Stay on the current branch.', 'Commit staged files only.', 'push with upstream tracking'],
-          forbidden: ['Do you want me to', 'stage all changes']
+          required: ['Stay on the current branch.', 'Stage all safe tracked and untracked files before committing.', 'push with upstream tracking', 'Use `gh` CLI for every GitHub operation in pspec.'],
+          forbidden: ['Do you want me to', 'Commit staged files only.']
         },
         {
           file: 'pspec.commit-raise-pr.md',
           maxWords: 240,
-          required: ['Create a new branch from the current HEAD before committing.', 'Infer a concise kebab-case branch name', 'Create a PR against the detected default branch'],
-          forbidden: ['commit all changes in the repo', 'ask for permission before pushing']
+          required: ['Use `gh` CLI for every GitHub operation in pspec', 'Create a new branch from the current HEAD before committing.', 'Infer a concise kebab-case branch name', 'Stage all safe tracked and untracked files before committing.', 'Create a PR against the detected default branch'],
+          forbidden: ['Commit staged files only.', 'ask for permission before pushing']
         },
         {
           file: 'pspec.spec.md',
@@ -134,7 +134,7 @@ describe('templates', () => {
         {
           file: 'pspec.implement.md',
           maxWords: 300,
-          required: ['Default to direct execution.', 'Verify by risk, not by checkbox:', 'same `<epoch-ms>-<slug>` stem'],
+          required: ['Default to direct execution.', 'AGENTS.md` or `CLAUDE.md`', 'Verify by risk, not by checkbox:', 'same `<epoch-ms>-<slug>` stem'],
           forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task']
         },
         {
@@ -380,6 +380,7 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const generalistTemplate = templates.find(t => t.file === 'generalist.md');
+      expect(generalistTemplate?.content).toContain('AGENTS.md or CLAUDE.md');
       expect(generalistTemplate?.content).toContain('Match local test structure and assertion style');
     });
 
@@ -392,6 +393,7 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const implementorTemplate = templates.find(t => t.file === 'implementator.md');
+      expect(implementorTemplate?.content).toContain('code and tests in any stack');
       expect(implementorTemplate?.content).toContain('Relevant existing tests still pass');
     });
 
@@ -403,6 +405,7 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const testPlannerTemplate = templates.find(t => t.file === 'test_planner.md');
+      expect(testPlannerTemplate?.content).toContain('AGENTS.md or CLAUDE.md');
       expect(testPlannerTemplate?.content).toContain('Boundary:');
     });
 
