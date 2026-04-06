@@ -12,7 +12,7 @@
 
 `pspec` (picospec) is a lightweight alternative to heavy SDD frameworks. It is the smallest specification workflow for a solo developer. It removes the "enterprise theater" (branch-per-feature, complex state files, and heavy daemon processes) and focuses strictly on **intent** (the Spec) and **execution** (the Tasks) using simple Markdown files.
 
-It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, and OpenCode.
+It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, OpenCode, Roo Code, and Kilo Code.
 
 ## Philosophy
 - **Token Efficient:** Uses a single spec `*.md` and task `*.tasks.md` file for context instead of massive chat histories.
@@ -192,6 +192,25 @@ your-project/
 │       ├── pspec.spec.mdc
 │       ├── pspec.plan.mdc
 │       └── pspec.implement.mdc
+├── .roo/                          # Optional: alternative agent integration
+│   ├── commands/
+│   │   ├── pspec.commit-current-branch.md
+│   │   ├── pspec.commit-raise-pr.md
+│   │   ├── pspec.spec.md
+│   │   ├── pspec.plan.md
+│   │   └── pspec.implement.md
+│   └── .roomodes                  # Roo Code custom modes configuration
+├── .kilo/                         # Optional: alternative agent integration
+│   ├── agents/
+│   │   ├── architect.md
+│   │   ├── debugger.md
+│   │   └── ...
+│   └── commands/
+│       ├── pspec.commit-current-branch.md
+│       ├── pspec.commit-raise-pr.md
+│       ├── pspec.spec.md
+│       ├── pspec.plan.md
+│       └── pspec.implement.md
 ├── src/                           # Your actual code
 └── package.json
 ```
