@@ -33,9 +33,10 @@ describe('report-template-budgets', () => {
   it('should report budgets for all compiled agent prompts', () => {
     const rows = getCompiledAgentPromptBudgets();
 
-    expect(rows).toHaveLength(7);
-    expect(rows.find(row => row.name === 'generalist')?.tokens).toBeLessThan(380);
-    expect(rows.find(row => row.name === 'test_planner')?.tokens).toBeLessThan(380);
+    expect(rows).toHaveLength(4);
+    expect(rows.find(row => row.name === 'architect')?.tokens).toBeLessThan(650);
+    expect(rows.find(row => row.name === 'generalist')?.tokens).toBeLessThan(650);
+    expect(rows.find(row => row.name === 'debugger')?.tokens).toBeLessThan(650);
   });
 
   it('should build a readable report', () => {

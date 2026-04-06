@@ -31,6 +31,14 @@ export interface AgentDefinition {
   guidelines?: string[];
   pattern_matching?: string[];
   completion_criteria?: string[];
+  entry_triggers?: string[];
+  non_goals?: string[];
+  handoff_rules?: {
+    primary: string;
+    secondary?: string[];
+    payload: string[];
+  };
+  completion_threshold?: string[];
   test_heuristics?: {
     boundary?: string;
     error_paths?: string;
@@ -152,12 +160,9 @@ export function getTemplates(agent: string): Template[] {
 
 export const AVAILABLE_AGENTS = [
   'architect',
-  'task_planner',
   'generalist',
   'investigator',
-  'debugger',
-  'implementator',
-  'test_planner'
+  'debugger'
 ] as const;
 
 export type AgentName = typeof AVAILABLE_AGENTS[number];
@@ -168,7 +173,43 @@ export function getAgent(name: AgentName): AgentDefinition {
     throw new Error(`Agent template not found: ${name}`);
   }
   const content = fs.readFileSync(filePath, 'utf-8');
-  return yaml.load(content) as AgentDefinition;
+  const agent = yaml.load(content) as AgentDefinition;
+  validateAgentDefinition(agent);
+  return agent;
+}
+
+const VALID_HANDOFF_TARGETS = new Set<string>([...AVAILABLE_AGENTS, 'requester']);
+
+function validateAgentDefinition(agent: AgentDefinition): void {
+  if (!agent.entry_triggers || agent.entry_triggers.length === 0) {
+    throw new Error(`Agent ${agent.name} must define entry_triggers`);
+  }
+  if (!agent.non_goals || agent.non_goals.length === 0) {
+    throw new Error(`Agent ${agent.name} must define non_goals`);
+  }
+  if (!agent.handoff_rules) {
+    throw new Error(`Agent ${agent.name} must define handoff_rules`);
+  }
+  if (!VALID_HANDOFF_TARGETS.has(agent.handoff_rules.primary)) {
+    throw new Error(`Agent ${agent.name} has invalid primary handoff target: ${agent.handoff_rules.primary}`);
+  }
+  if ((agent.handoff_rules.secondary || []).length > 2) {
+    throw new Error(`Agent ${agent.name} has too many secondary handoff targets`);
+  }
+  (agent.handoff_rules.secondary || []).forEach(target => {
+    if (!VALID_HANDOFF_TARGETS.has(target)) {
+      throw new Error(`Agent ${agent.name} has invalid secondary handoff target: ${target}`);
+    }
+  });
+  if (JSON.stringify(agent.handoff_rules.payload) !== JSON.stringify(['Reason', 'Next', 'Context', 'Open'])) {
+    throw new Error(`Agent ${agent.name} must use standard handoff payload`);
+  }
+  if (!agent.completion_threshold || agent.completion_threshold.length === 0) {
+    throw new Error(`Agent ${agent.name} must define completion_threshold`);
+  }
+  if (!agent.communication?.format?.includes('Handover:')) {
+    throw new Error(`Agent ${agent.name} communication format must include Handover line`);
+  }
 }
 
 function buildToolLines(tools: AgentDefinition['tools']): string[] {
@@ -203,6 +244,19 @@ function buildHeuristicLines(testHeuristics?: AgentDefinition['test_heuristics']
     lines.push(`- Integration: ${testHeuristics.integration}`);
   }
 
+  return lines;
+}
+
+function buildHandoffLines(handoffRules?: AgentDefinition['handoff_rules']): string[] {
+  if (!handoffRules) {
+    return [];
+  }
+
+  const lines = [`- Primary: ${handoffRules.primary}`];
+  if (handoffRules.secondary && handoffRules.secondary.length > 0) {
+    lines.push(`- Secondary: ${handoffRules.secondary.join(', ')}`);
+  }
+  lines.push(`- Payload: ${handoffRules.payload.join(' / ')}`);
   return lines;
 }
 
@@ -250,8 +304,25 @@ function buildAgentBody(
     sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
   }
 
+  if (agent.entry_triggers && agent.entry_triggers.length > 0) {
+    sections.push(`## Entry Triggers\n${agent.entry_triggers.map(trigger => `- ${trigger}`).join('\n')}`);
+  }
+
+  if (agent.non_goals && agent.non_goals.length > 0) {
+    sections.push(`## Non-Goals\n${agent.non_goals.map(goal => `- ${goal}`).join('\n')}`);
+  }
+
   if (agent.decision_rules && agent.decision_rules.length > 0) {
     sections.push(`## Decision Rules\n${agent.decision_rules.map(rule => `- ${rule}`).join('\n')}`);
+  }
+
+  const handoffLines = buildHandoffLines(agent.handoff_rules);
+  if (handoffLines.length > 0) {
+    sections.push(`## Handoff Rules\n${handoffLines.join('\n')}`);
+  }
+
+  if (agent.completion_threshold && agent.completion_threshold.length > 0) {
+    sections.push(`## Completion Threshold\n${agent.completion_threshold.map(line => `- ${line}`).join('\n')}`);
   }
 
   if (executionNotes.length > 0) {

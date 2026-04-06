@@ -216,11 +216,8 @@ describe('initCommand agent files', () => {
     // Check that agent files were created
     expect(fs.existsSync(path.join(tmpDir, '.claude/agents/architect.md'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, '.claude/agents/debugger.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/task_planner.md'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, '.claude/agents/generalist.md'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, '.claude/agents/investigator.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/implementator.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.claude/agents/test_planner.md'))).toBe(true);
 
     // Verify content
     const architectContent = fs.readFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'utf-8');
@@ -268,11 +265,8 @@ describe('initCommand agent files', () => {
 
     expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/architect.md'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/debugger.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/task_planner.md'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/generalist.md'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/investigator.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/implementator.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/test_planner.md'))).toBe(true);
 
     // Verify content matches Claude format
     const architectContent = fs.readFileSync(path.join(tmpDir, '.kilo/agents/architect.md'), 'utf-8');
@@ -299,14 +293,11 @@ describe('initCommand agent files', () => {
     expect(roomodesContent).toContain('customInstructions:');
     expect(roomodesContent).toContain('groups:');
     
-    // Should have all 7 agents
+    // Should have all 4 agents
     expect(roomodesContent).toContain('slug: "architect"');
-    expect(roomodesContent).toContain('slug: "task-planner"');
     expect(roomodesContent).toContain('slug: "generalist"');
     expect(roomodesContent).toContain('slug: "investigator"');
     expect(roomodesContent).toContain('slug: "debugger"');
-    expect(roomodesContent).toContain('slug: "implementator"');
-    expect(roomodesContent).toContain('slug: "test-planner"');
   });
 
   it('should ask user when agent files already exist', async () => {
@@ -393,16 +384,13 @@ describe('initCommand agent files', () => {
       // Verify all agent directories were created
       expect(fs.existsSync(path.join(tmpDir, '.claude/agents'))).toBe(true);
       
-      // Should have created all 7 agent files
+      // Should have created all 4 agent files
       const agentFiles = fs.readdirSync(path.join(tmpDir, '.claude/agents'));
-      expect(agentFiles.length).toBe(7);
+      expect(agentFiles.length).toBe(4);
       expect(agentFiles).toContain('architect.md');
-      expect(agentFiles).toContain('task_planner.md');
       expect(agentFiles).toContain('generalist.md');
       expect(agentFiles).toContain('investigator.md');
       expect(agentFiles).toContain('debugger.md');
-      expect(agentFiles).toContain('implementator.md');
-      expect(agentFiles).toContain('test_planner.md');
     });
 
     it('should handle mixed existing and new agent files', async () => {
@@ -410,7 +398,7 @@ describe('initCommand agent files', () => {
       fs.mkdirSync(path.join(tmpDir, '.claude/agents'), { recursive: true });
       fs.writeFileSync(path.join(tmpDir, '.claude/agents/architect.md'), 'custom architect');
       fs.writeFileSync(path.join(tmpDir, '.claude/agents/debugger.md'), 'custom debugger');
-      // Other 5 agents don't exist yet
+      // Other 2 agents don't exist yet
       
       mockPrompt
         .mockResolvedValueOnce({ agents: ['claude'] })
@@ -466,7 +454,7 @@ describe('initCommand agent files', () => {
 
       // Should still create all agent files
       const agentFiles = fs.readdirSync(path.join(tmpDir, '.claude/agents'));
-      expect(agentFiles.length).toBe(7);
+      expect(agentFiles.length).toBe(4);
     });
 
   });
