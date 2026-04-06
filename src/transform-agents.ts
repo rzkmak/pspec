@@ -31,6 +31,14 @@ export interface OpenCodeAgent {
   token_efficiency?: string[];
   guidelines?: string[];
   completion_criteria?: string[];
+  entry_triggers?: string[];
+  non_goals?: string[];
+  handoff_rules?: {
+    primary: string;
+    secondary?: string[];
+    payload: string[];
+  };
+  completion_threshold?: string[];
   pattern_matching?: string[];
   test_heuristics?: Record<string, string>;
   communication?: {
@@ -107,7 +115,43 @@ export const toolMapping: Record<string, Record<string, string[]>> = {
  * Parse OpenCode YAML agent
  */
 export function parseOpenCodeAgent(content: string): OpenCodeAgent {
-  return yaml.load(content) as OpenCodeAgent;
+  const agent = yaml.load(content) as OpenCodeAgent;
+  validateOpenCodeAgent(agent);
+  return agent;
+}
+
+const VALID_HANDOFF_TARGETS = new Set(['architect', 'generalist', 'investigator', 'debugger', 'requester']);
+
+function validateOpenCodeAgent(agent: OpenCodeAgent): void {
+  if (!agent.entry_triggers || agent.entry_triggers.length === 0) {
+    throw new Error(`Agent ${agent.name} must define entry_triggers`);
+  }
+  if (!agent.non_goals || agent.non_goals.length === 0) {
+    throw new Error(`Agent ${agent.name} must define non_goals`);
+  }
+  if (!agent.handoff_rules) {
+    throw new Error(`Agent ${agent.name} must define handoff_rules`);
+  }
+  if (!VALID_HANDOFF_TARGETS.has(agent.handoff_rules.primary)) {
+    throw new Error(`Agent ${agent.name} has invalid primary handoff target: ${agent.handoff_rules.primary}`);
+  }
+  if ((agent.handoff_rules.secondary || []).length > 2) {
+    throw new Error(`Agent ${agent.name} has too many secondary handoff targets`);
+  }
+  (agent.handoff_rules.secondary || []).forEach(target => {
+    if (!VALID_HANDOFF_TARGETS.has(target)) {
+      throw new Error(`Agent ${agent.name} has invalid secondary handoff target: ${target}`);
+    }
+  });
+  if (JSON.stringify(agent.handoff_rules.payload) !== JSON.stringify(['Reason', 'Next', 'Context', 'Open'])) {
+    throw new Error(`Agent ${agent.name} must use standard handoff payload`);
+  }
+  if (!agent.completion_threshold || agent.completion_threshold.length === 0) {
+    throw new Error(`Agent ${agent.name} must define completion_threshold`);
+  }
+  if (!agent.communication?.format?.includes('Handover:')) {
+    throw new Error(`Agent ${agent.name} communication format must include Handover line`);
+  }
 }
 
 function buildToolPromptLines(
@@ -171,6 +215,19 @@ function buildExecutionNotes(agent: OpenCodeAgent): string[] {
   ];
 }
 
+function buildHandoffPromptLines(handoffRules?: OpenCodeAgent['handoff_rules']): string[] {
+  if (!handoffRules) {
+    return [];
+  }
+
+  const lines = [`- Primary: ${handoffRules.primary}`];
+  if (handoffRules.secondary && handoffRules.secondary.length > 0) {
+    lines.push(`- Secondary: ${handoffRules.secondary.join(', ')}`);
+  }
+  lines.push(`- Payload: ${handoffRules.payload.join(' / ')}`);
+  return lines;
+}
+
 function buildAgentPrompt(
   agent: OpenCodeAgent,
   target: keyof typeof toolMapping,
@@ -202,8 +259,25 @@ function buildAgentPrompt(
     sections.push(`## Constraints\n${agent.constraints.map(c => `- ${c}`).join('\n')}`);
   }
 
+  if (agent.entry_triggers && agent.entry_triggers.length > 0) {
+    sections.push(`## Entry Triggers\n${agent.entry_triggers.map(t => `- ${t}`).join('\n')}`);
+  }
+
+  if (agent.non_goals && agent.non_goals.length > 0) {
+    sections.push(`## Non-Goals\n${agent.non_goals.map(goal => `- ${goal}`).join('\n')}`);
+  }
+
   if (agent.decision_rules && agent.decision_rules.length > 0) {
     sections.push(`## Decision Rules\n${agent.decision_rules.map(r => `- ${r}`).join('\n')}`);
+  }
+
+  const handoffLines = buildHandoffPromptLines(agent.handoff_rules);
+  if (handoffLines.length > 0) {
+    sections.push(`## Handoff Rules\n${handoffLines.join('\n')}`);
+  }
+
+  if (agent.completion_threshold && agent.completion_threshold.length > 0) {
+    sections.push(`## Completion Threshold\n${agent.completion_threshold.map(line => `- ${line}`).join('\n')}`);
   }
 
   if (executionNotes.length > 0) {

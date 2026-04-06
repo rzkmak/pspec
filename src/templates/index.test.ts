@@ -159,22 +159,19 @@ describe('templates', () => {
 
 describe('agents', () => {
   describe('AVAILABLE_AGENTS', () => {
-    it('should contain all 7 hardcoded agents', () => {
-      expect(AVAILABLE_AGENTS).toHaveLength(7);
+    it('should contain all 4 hardcoded agents', () => {
+      expect(AVAILABLE_AGENTS).toHaveLength(4);
       expect(AVAILABLE_AGENTS).toContain('architect');
-      expect(AVAILABLE_AGENTS).toContain('task_planner');
       expect(AVAILABLE_AGENTS).toContain('generalist');
       expect(AVAILABLE_AGENTS).toContain('investigator');
       expect(AVAILABLE_AGENTS).toContain('debugger');
-      expect(AVAILABLE_AGENTS).toContain('implementator');
-      expect(AVAILABLE_AGENTS).toContain('test_planner');
     });
   });
 
   describe('listAgents', () => {
     it('should return all available agent names', () => {
       const agents = listAgents();
-      expect(agents).toHaveLength(7);
+      expect(agents).toHaveLength(4);
       expect(agents).toEqual(expect.arrayContaining(AVAILABLE_AGENTS));
     });
   });
@@ -190,9 +187,13 @@ describe('agents', () => {
       expect(agent.communication).toBeDefined();
       expect(agent.communication.style).toBeDefined();
       expect(agent.communication.format).toBeDefined();
+      expect(agent.entry_triggers?.length).toBeGreaterThan(0);
+      expect(agent.non_goals?.length).toBeGreaterThan(0);
+      expect(agent.handoff_rules?.payload).toEqual(['Reason', 'Next', 'Context', 'Open']);
+      expect(agent.completion_threshold?.length).toBeGreaterThan(0);
     });
 
-    it('should load all 7 agents successfully', () => {
+    it('should load all 4 agents successfully', () => {
       AVAILABLE_AGENTS.forEach(agentName => {
         const agent = getAgent(agentName);
         expect(agent.name).toBe(agentName);
@@ -205,6 +206,12 @@ describe('agents', () => {
         );
         expect(hasTools).toBe(true);
         expect(agent.constraints.length).toBeGreaterThan(0);
+        expect(agent.entry_triggers?.length).toBeGreaterThan(0);
+        expect(agent.non_goals?.length).toBeGreaterThan(0);
+        expect(agent.handoff_rules?.primary).toBeDefined();
+        expect(agent.handoff_rules?.payload).toEqual(['Reason', 'Next', 'Context', 'Open']);
+        expect((agent.handoff_rules?.secondary || []).length).toBeLessThanOrEqual(2);
+        expect(agent.completion_threshold?.length).toBeGreaterThan(0);
       });
     });
 
@@ -220,9 +227,14 @@ describe('agents', () => {
       expect(prompt).toContain('## Capabilities');
       expect(prompt).toContain('## Available Tools');
       expect(prompt).toContain('## Constraints');
+      expect(prompt).toContain('## Entry Triggers');
+      expect(prompt).toContain('## Non-Goals');
       expect(prompt).toContain('## Decision Rules');
+      expect(prompt).toContain('## Handoff Rules');
+      expect(prompt).toContain('## Completion Threshold');
       expect(prompt).toContain('## Execution Notes');
       expect(prompt).toContain('## Output Format');
+      expect(prompt).toContain('Handover:');
     });
 
     it('should include all agents required sections', () => {
@@ -232,15 +244,20 @@ describe('agents', () => {
         expect(prompt).toContain('## Capabilities');
         expect(prompt).toContain('## Available Tools');
         expect(prompt).toContain('## Constraints');
+        expect(prompt).toContain('## Entry Triggers');
+        expect(prompt).toContain('## Non-Goals');
         expect(prompt).toContain('## Decision Rules');
+        expect(prompt).toContain('## Handoff Rules');
+        expect(prompt).toContain('## Completion Threshold');
         expect(prompt).toContain('## Execution Notes');
         expect(prompt).toContain('## Output Format');
+        expect(prompt).toContain('Handover:');
       });
     });
 
     it('should keep compiled prompts within lean token budgets', () => {
-      const perAgentBudget = 380;
-      const totalBudget = 2300;
+      const perAgentBudget = 650;
+      const totalBudget = 2400;
 
       const tokenCounts = AVAILABLE_AGENTS.map(agentName => estimateTokens(getAgentPrompt(agentName)));
 
@@ -253,7 +270,7 @@ describe('agents', () => {
 describe('getAgentTemplates', () => {
   it('should return agent templates in claude format', () => {
     const templates = getAgentTemplates('claude');
-    expect(templates.length).toBe(7);
+    expect(templates.length).toBe(4);
     
     const architectTemplate = templates.find(t => t.file === 'architect.md');
     expect(architectTemplate).toBeDefined();
@@ -266,7 +283,7 @@ describe('getAgentTemplates', () => {
 
   it('should return agent templates in gemini format', () => {
     const templates = getAgentTemplates('gemini');
-    expect(templates.length).toBe(7);
+    expect(templates.length).toBe(4);
     
     const architectTemplate = templates.find(t => t.file === 'architect.toml');
     expect(architectTemplate).toBeDefined();
@@ -278,7 +295,7 @@ describe('getAgentTemplates', () => {
 
   it('should return agent templates in cursor format', () => {
     const templates = getAgentTemplates('cursor');
-    expect(templates.length).toBe(7);
+    expect(templates.length).toBe(4);
     
     const architectTemplate = templates.find(t => t.file === 'architect.mdc');
     expect(architectTemplate).toBeDefined();
@@ -288,7 +305,7 @@ describe('getAgentTemplates', () => {
 
   it('should return agent templates in opencode format', () => {
     const templates = getAgentTemplates('opencode');
-    expect(templates.length).toBe(7);
+    expect(templates.length).toBe(4);
     
     const architectTemplate = templates.find(t => t.file === 'architect.md');
     expect(architectTemplate).toBeDefined();
@@ -297,7 +314,7 @@ describe('getAgentTemplates', () => {
 
   it('should return agent templates in kilo format', () => {
     const templates = getAgentTemplates('kilo');
-    expect(templates.length).toBe(7);
+    expect(templates.length).toBe(4);
     
     const architectTemplate = templates.find(t => t.file === 'architect.md');
     expect(architectTemplate).toBeDefined();
@@ -335,18 +352,21 @@ describe('getAgentTemplates', () => {
     expect(generalistTemplate?.content).toContain('## Decision Rules');
     expect(generalistTemplate?.content).toContain('## Execution Notes');
     expect(generalistTemplate?.content).toContain('Match naming and export conventions exactly');
+    expect(generalistTemplate?.content).toContain('Reason / Next / Context / Open');
+    expect(generalistTemplate?.content).toContain('## Handoff Rules');
   });
 
-  it('should include test heuristics for test_planner in gemini format', () => {
+  it('should include architect planning guidance in gemini format', () => {
     const templates = getAgentTemplates('gemini');
-    const testPlannerTemplate = templates.find(t => t.file === 'test_planner.toml');
+    const architectTemplate = templates.find(t => t.file === 'architect.toml');
     
-    expect(testPlannerTemplate?.content).toContain('Boundary:');
-  });
+      expect(architectTemplate?.content).toContain('Sequence: setup');
+      expect(architectTemplate?.content).toContain('## Completion Threshold');
+    });
 
   it('should match snapshots for representative agent outputs across targets', () => {
     const targets = ['claude', 'gemini', 'cursor', 'opencode', 'kilo', 'roo'] as const;
-    const agents = ['architect', 'generalist', 'test_planner'] as const;
+    const agents = ['architect', 'generalist', 'debugger'] as const;
 
     const snapshots = Object.fromEntries(
       targets.map(target => {
@@ -374,18 +394,18 @@ describe('getAgentTemplates', () => {
 
   describe('edge cases', () => {
     it('should handle agent with missing optional fields gracefully', () => {
-      // task_planner doesn't have role, pattern_matching, completion_criteria, or test_heuristics
-      const templates = getAgentTemplates('claude');
-      const taskPlannerTemplate = templates.find(t => t.file === 'task_planner.md');
-      
-      expect(taskPlannerTemplate).toBeDefined();
-      // Should still have required fields
-      expect(taskPlannerTemplate?.content).toContain('name: task_planner');
-      expect(taskPlannerTemplate?.content).toContain('## Capabilities');
-      expect(taskPlannerTemplate?.content).toContain('## Constraints');
-      // Should have guidelines since it's defined
-      expect(taskPlannerTemplate?.content).toContain('## Execution Notes');
-    });
+        // investigator has a narrower tool set and still compiles correctly
+        const templates = getAgentTemplates('claude');
+        const investigatorTemplate = templates.find(t => t.file === 'investigator.md');
+        
+        expect(investigatorTemplate).toBeDefined();
+        // Should still have required fields
+        expect(investigatorTemplate?.content).toContain('name: investigator');
+      expect(investigatorTemplate?.content).toContain('## Capabilities');
+      expect(investigatorTemplate?.content).toContain('## Constraints');
+      expect(investigatorTemplate?.content).toContain('## Execution Notes');
+      expect(investigatorTemplate?.content).toContain('## Handoff Rules');
+      });
 
     it('should handle agent with empty tool categories', () => {
       // investigator only has read and delegate tools, no modify or verify
@@ -417,29 +437,16 @@ describe('getAgentTemplates', () => {
       expect(generalistTemplate?.content).toContain('Match local test structure and assertion style');
     });
 
-    it('should handle agent with completion_criteria', () => {
-      // implementator has completion_criteria
-      const agent = getAgent('implementator');
+    it('should handle agent with guidelines', () => {
+      const agent = getAgent('architect');
       
-      expect(agent.completion_criteria).toBeDefined();
-      expect(agent.completion_criteria?.length).toBeGreaterThan(0);
-      
-      const templates = getAgentTemplates('claude');
-      const implementorTemplate = templates.find(t => t.file === 'implementator.md');
-      expect(implementorTemplate?.content).toContain('code and tests in any stack');
-      expect(implementorTemplate?.content).toContain('Relevant existing tests still pass');
-    });
-
-    it('should handle agent with test_heuristics', () => {
-      // test_planner has test_heuristics
-      const agent = getAgent('test_planner');
-      
-      expect(agent.test_heuristics).toBeDefined();
+      expect(agent.guidelines).toBeDefined();
+      expect(agent.guidelines?.length).toBeGreaterThan(0);
       
       const templates = getAgentTemplates('claude');
-      const testPlannerTemplate = templates.find(t => t.file === 'test_planner.md');
-      expect(testPlannerTemplate?.content).toContain('AGENTS.md or CLAUDE.md');
-      expect(testPlannerTemplate?.content).toContain('Boundary:');
+      const architectTemplate = templates.find(t => t.file === 'architect.md');
+      expect(architectTemplate?.content).toContain('Sequence: setup');
+      expect(architectTemplate?.content).toContain('Plan only to the level needed to unblock execution');
     });
 
     it('should handle agent with role field', () => {
@@ -451,17 +458,16 @@ describe('getAgentTemplates', () => {
       
       const templates = getAgentTemplates('claude');
       const architectTemplate = templates.find(t => t.file === 'architect.md');
-      expect(architectTemplate?.content).toContain('Design the minimum architecture needed');
+      expect(architectTemplate?.content).toContain('Design the minimum architecture and implementation plan needed');
     });
 
     it('should handle agent without role field', () => {
-      // task_planner doesn't have role
-      const agent = getAgent('task_planner');
+      const agent = getAgent('investigator');
       
       expect(agent.role).toBeUndefined();
       
       // getAgentPrompt should use description as fallback
-      const prompt = getAgentPrompt('task_planner');
+      const prompt = getAgentPrompt('investigator');
       expect(prompt).toContain('You are an agent specialized in');
     });
 
@@ -516,9 +522,14 @@ describe('getAgentTemplates', () => {
         expect(prompt).toContain('## Capabilities');
         expect(prompt).toContain('## Available Tools');
         expect(prompt).toContain('## Constraints');
+        expect(prompt).toContain('## Entry Triggers');
+        expect(prompt).toContain('## Non-Goals');
         expect(prompt).toContain('## Decision Rules');
+        expect(prompt).toContain('## Handoff Rules');
+        expect(prompt).toContain('## Completion Threshold');
         expect(prompt).toContain('## Execution Notes');
         expect(prompt).toContain('## Output Format');
+        expect(prompt).toContain('Handover:');
         
         // Should not be empty
         expect(prompt.length).toBeGreaterThan(100);

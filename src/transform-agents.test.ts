@@ -38,6 +38,27 @@ constraints:
   - Focus on clarity and completeness in specifications
   - Always consider edge cases and failure modes
 
+entry_triggers:
+  - Need architecture for a new feature
+  - Need a spec before implementation
+
+non_goals:
+  - Do not implement features directly
+  - Do not debug runtime failures
+
+handoff_rules:
+  primary: generalist
+  secondary:
+    - investigator
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+
+completion_threshold:
+  - Stop once architecture and execution order are clear
+
 decision_rules:
   - "IF requirements are ambiguous → ask for clarification before designing"
   - "IF similar feature exists in codebase → reference its architecture as baseline"
@@ -54,6 +75,7 @@ communication:
 
     ## Data Model
     [Complete tables/interfaces with all fields, types, constraints]
+    Handover: [none | Reason / Next / Context / Open]
 `;
 
   const mockDebuggerYaml = `name: debugger
@@ -75,11 +97,33 @@ tools:
 constraints:
   - Create minimal reproduction before fixing
 
+entry_triggers:
+  - Failure is reproducible
+  - Error trace is the main blocker
+
+non_goals:
+  - Do not continue feature implementation
+  - Do not redesign systems without evidence
+
+handoff_rules:
+  primary: generalist
+  secondary:
+    - architect
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+
+completion_threshold:
+  - Stop once repro, cause, and fix status are known
+
 communication:
   style: precise
   format: |
     ## Root Cause
     [One sentence explanation]
+    Handover: [none | Reason / Next / Context / Open]
 `;
 
   const mockInvestigatorYaml = `name: investigator
@@ -95,11 +139,33 @@ tools:
 constraints:
   - Be thorough but efficient in searches
 
+entry_triggers:
+  - Need a reference implementation
+  - Need to trace a dependency path
+
+non_goals:
+  - Do not implement changes
+  - Do not make design decisions
+
+handoff_rules:
+  primary: requester
+  secondary:
+    - architect
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+
+completion_threshold:
+  - Stop once top references and confidence are clear
+
 communication:
   style: analytical
   format: |
     ## Investigation Summary
     [What was searched]
+    Handover: [none | Reason / Next / Context / Open]
 `;
 
   beforeEach(() => {
@@ -118,6 +184,10 @@ communication:
       expect(agent.tools?.modify).toBe(true);
       expect(agent.tools?.verify).toBe(true);
       expect(agent.constraints).toHaveLength(2);
+      expect(agent.entry_triggers).toHaveLength(2);
+      expect(agent.non_goals).toHaveLength(2);
+      expect(agent.handoff_rules?.payload).toEqual(['Reason', 'Next', 'Context', 'Open']);
+      expect(agent.completion_threshold).toHaveLength(1);
       expect(agent.decision_rules).toHaveLength(2);
       expect(agent.token_efficiency).toHaveLength(2);
       expect(agent.communication?.style).toBe('structured');
@@ -180,7 +250,11 @@ communication:
       expect(claudeAgent.prompt).toContain('## Capabilities');
       expect(claudeAgent.prompt).toContain('## Tools');
       expect(claudeAgent.prompt).toContain('## Constraints');
+      expect(claudeAgent.prompt).toContain('## Entry Triggers');
+      expect(claudeAgent.prompt).toContain('## Non-Goals');
       expect(claudeAgent.prompt).toContain('## Decision Rules');
+      expect(claudeAgent.prompt).toContain('## Handoff Rules');
+      expect(claudeAgent.prompt).toContain('## Completion Threshold');
       expect(claudeAgent.prompt).toContain('## Execution Notes');
     });
 
@@ -198,10 +272,25 @@ communication:
     it('should handle agent without optional fields', () => {
       const minimalYaml = `name: minimal
 description: A minimal agent
+entry_triggers:
+  - Need read-only lookup
+non_goals:
+  - Do not edit files
+handoff_rules:
+  primary: requester
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+completion_threshold:
+  - Stop once the answer is found
 tools:
   read: true
 communication:
   style: concise
+  format: |
+    Handover: [none | Reason / Next / Context / Open]
 `;
       const openCodeAgent = parseOpenCodeAgent(minimalYaml);
       const claudeAgent = convertToClaudeCode(openCodeAgent);
@@ -229,6 +318,7 @@ communication:
       expect(codexAgent.model).toBe('o4-mini');
       expect(codexAgent.prompt).toContain('Design system architecture');
       expect(codexAgent.prompt).toContain('## Capabilities');
+      expect(codexAgent.prompt).toContain('## Handoff Rules');
     });
 
     it('should convert investigator agent with limited tools', () => {
@@ -251,15 +341,31 @@ communication:
       expect(geminiCommand.prompt).toContain('## Capabilities');
       expect(geminiCommand.prompt).toContain('## Tools');
       expect(geminiCommand.prompt).toContain('## Constraints');
+      expect(geminiCommand.prompt).toContain('## Handoff Rules');
     });
 
     it('should escape double quotes in prompt for TOML', () => {
       const yamlWithQuotes = `name: quoted
 description: Agent with "quotes"
 role: Say "hello" to the user
+entry_triggers:
+  - Need quoted response
+non_goals:
+  - Do not modify files
+handoff_rules:
+  primary: requester
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+completion_threshold:
+  - Stop after returning the quoted output
 communication:
   style: normal
-  format: "Test format"
+  format: |
+    Test format
+    Handover: [none | Reason / Next / Context / Open]
 tools:
   read: true
 `;
@@ -489,10 +595,25 @@ tools:
       const yaml = `name: empty
 description: Empty agent
 capabilities: []
+entry_triggers:
+  - Need a no-capability wrapper
+non_goals:
+  - Do not take broad tasks
+handoff_rules:
+  primary: requester
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+completion_threshold:
+  - Stop after returning the wrapper result
 tools:
   read: true
 communication:
   style: normal
+  format: |
+    Handover: [none | Reason / Next / Context / Open]
 `;
       const agent = parseOpenCodeAgent(yaml);
       const claude = convertToClaudeCode(agent);
@@ -503,8 +624,23 @@ communication:
     it('should handle agent with no tools object', () => {
       const yaml = `name: no-tools
 description: Agent without tools
+entry_triggers:
+  - Need a pure reasoning step
+non_goals:
+  - Do not use filesystem tools
+handoff_rules:
+  primary: requester
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+completion_threshold:
+  - Stop once the reasoning result is ready
 communication:
   style: normal
+  format: |
+    Handover: [none | Reason / Next / Context / Open]
 `;
       const agent = parseOpenCodeAgent(yaml);
       const claude = convertToClaudeCode(agent);
@@ -515,8 +651,23 @@ communication:
     it('should handle agent with special characters in description', () => {
       const yaml = `name: special
 description: 'Agent with <special> & "characters"'
+entry_triggers:
+  - Need special-character handling
+non_goals:
+  - Do not mutate description text
+handoff_rules:
+  primary: requester
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+completion_threshold:
+  - Stop after preserving the description
 communication:
   style: normal
+  format: |
+    Handover: [none | Reason / Next / Context / Open]
 tools:
   read: true
 `;
@@ -528,10 +679,24 @@ tools:
       const longFormat = 'A'.repeat(5000);
       const yaml = `name: long-format
 description: Agent with long format
+entry_triggers:
+  - Need long-format rendering
+non_goals:
+  - Do not truncate content in parsing
+handoff_rules:
+  primary: requester
+  payload:
+    - Reason
+    - Next
+    - Context
+    - Open
+completion_threshold:
+  - Stop after preserving the long format
 communication:
   style: normal
   format: |
     ${longFormat}
+    Handover: [none | Reason / Next / Context / Open]
 tools:
   read: true
 `;
