@@ -5,7 +5,7 @@ const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
 describe('templates', () => {
   it('should have templates for all supported agents', () => {
-    const agents = ['claude', 'gemini', 'cursor', 'opencode'];
+    const agents = ['claude', 'gemini', 'cursor', 'opencode', 'roo', 'kilo'];
     agents.forEach(agent => {
       expect(templates).toHaveProperty(agent);
       expect(Array.isArray(templates[agent])).toBe(true);
@@ -295,6 +295,34 @@ describe('getAgentTemplates', () => {
     expect(architectTemplate?.dir).toBe('.opencode/agents');
   });
 
+  it('should return agent templates in kilo format', () => {
+    const templates = getAgentTemplates('kilo');
+    expect(templates.length).toBe(7);
+    
+    const architectTemplate = templates.find(t => t.file === 'architect.md');
+    expect(architectTemplate).toBeDefined();
+    expect(architectTemplate?.dir).toBe('.kilo/agents');
+    expect(architectTemplate?.content).toContain('name: architect');
+    expect(architectTemplate?.content).toContain('## Capabilities');
+    expect(architectTemplate?.content).toContain('## Tools');
+    expect(architectTemplate?.content).toContain('## Constraints');
+  });
+
+  it('should return .roomodes file for roo format', () => {
+    const templates = getAgentTemplates('roo');
+    expect(templates.length).toBe(1);
+    
+    const roomodesTemplate = templates[0];
+    expect(roomodesTemplate.file).toBe('.roomodes');
+    expect(roomodesTemplate.dir).toBe('.');
+    expect(roomodesTemplate.content).toContain('customModes:');
+    expect(roomodesTemplate.content).toContain('slug:');
+    expect(roomodesTemplate.content).toContain('name:');
+    expect(roomodesTemplate.content).toContain('roleDefinition:');
+    expect(roomodesTemplate.content).toContain('customInstructions:');
+    expect(roomodesTemplate.content).toContain('groups:');
+  });
+
   it('should return empty array for unknown agent', () => {
     const templates = getAgentTemplates('unknown');
     expect(templates).toEqual([]);
@@ -317,7 +345,7 @@ describe('getAgentTemplates', () => {
   });
 
   it('should match snapshots for representative agent outputs across targets', () => {
-    const targets = ['claude', 'gemini', 'cursor', 'opencode'] as const;
+    const targets = ['claude', 'gemini', 'cursor', 'opencode', 'kilo', 'roo'] as const;
     const agents = ['architect', 'generalist', 'test_planner'] as const;
 
     const snapshots = Object.fromEntries(
@@ -327,6 +355,11 @@ describe('getAgentTemplates', () => {
           target,
           Object.fromEntries(
             agents.map(agentName => {
+              if (target === 'roo') {
+                // Roo has a single .roomodes file
+                const template = templates.find(t => t.file === '.roomodes');
+                return [agentName, template?.content];
+              }
               const ext = target === 'gemini' ? 'toml' : target === 'cursor' ? 'mdc' : 'md';
               const template = templates.find(t => t.file === `${agentName}.${ext}`);
               return [agentName, template?.content];

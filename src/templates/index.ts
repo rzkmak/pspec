@@ -125,6 +125,24 @@ description: "${data.desc}"
 ---
 ${data.prompt}
 `
+  })),
+  roo: Object.entries(commandPrompts).map(([name, data]) => ({
+    dir: '.roo/commands',
+    file: `${name}.md`,
+    content: `---
+description: "${data.desc}"
+---
+${data.prompt}
+`
+  })),
+  kilo: Object.entries(commandPrompts).map(([name, data]) => ({
+    dir: '.kilo/commands',
+    file: `${name}.md`,
+    content: `---
+description: "${data.desc}"
+---
+${data.prompt}
+`
   }))
 };
 
@@ -350,6 +368,86 @@ function convertToOpenCodeFormat(agent: AgentDefinition): string {
   return convertToClaudeFormat(agent);
 }
 
+function convertToKiloFormat(agent: AgentDefinition): string {
+  // Kilo uses same format as Claude
+  return convertToClaudeFormat(agent);
+}
+
+function convertToRoomodesFormat(agents: AgentDefinition[]): string {
+  // Build Roo's YAML format with customModes array
+  const lines: string[] = [];
+  lines.push('customModes:');
+  
+  for (const agent of agents) {
+    // Convert agent name to slug (match Roo naming convention)
+    const slug = agent.name.toLowerCase().replace(/_/g, '-');
+    
+    // Build roleDefinition from role or fallback
+    const roleDefinition = agent.role || `You are an agent specialized in ${agent.description.toLowerCase()}.`;
+    
+    // Build customInstructions from all agent sections
+    const instructionParts: string[] = [];
+    
+    if (agent.capabilities.length > 0) {
+      instructionParts.push('## Capabilities');
+      agent.capabilities.forEach(c => instructionParts.push(`- ${c}`));
+      instructionParts.push('');
+    }
+    
+    if (agent.constraints.length > 0) {
+      instructionParts.push('## Constraints');
+      agent.constraints.forEach(c => instructionParts.push(`- ${c}`));
+      instructionParts.push('');
+    }
+    
+    if (agent.decision_rules && agent.decision_rules.length > 0) {
+      instructionParts.push('## Decision Rules');
+      agent.decision_rules.forEach(rule => instructionParts.push(`- ${rule}`));
+      instructionParts.push('');
+    }
+    
+    const executionNotes = buildExecutionNotes(agent);
+    if (executionNotes.length > 0) {
+      instructionParts.push('## Execution Notes');
+      executionNotes.forEach(note => instructionParts.push(`- ${note}`));
+      instructionParts.push('');
+    }
+    
+    instructionParts.push('## Output Format');
+    instructionParts.push(`**Style:** ${agent.communication.style}`);
+    instructionParts.push('');
+    instructionParts.push(agent.communication.format);
+    
+    const customInstructions = instructionParts.join('\n');
+    
+    // Build groups array based on tools
+    // Mapping: read→read, modify→edit, verify→command, delegate→mcp
+    const groups: string[] = [];
+    if (agent.tools.read) groups.push('read');
+    if (agent.tools.modify) groups.push('edit');
+    if (agent.tools.verify) groups.push('command');
+    if (agent.tools.delegate) groups.push('mcp');
+    
+    // Output YAML for this mode with proper indentation
+    lines.push(`  - slug: "${slug}"`);
+    lines.push(`    name: "${agent.name}"`);
+    lines.push(`    roleDefinition: >-`);
+    // Indent roleDefinition by 6 spaces
+    roleDefinition.split('\n').forEach(line => {
+      lines.push(`      ${line.trim()}`);
+    });
+    lines.push(`    customInstructions: >-`);
+    // Indent customInstructions by 6 spaces
+    customInstructions.split('\n').forEach(line => {
+      lines.push(`      ${line}`);
+    });
+    lines.push(`    groups:`);
+    groups.forEach(g => lines.push(`      - ${g}`));
+  }
+  
+  return lines.join('\n');
+}
+
 function convertToZedFormat(agents: AgentDefinition[]): string {
   const sections: string[] = ['# pspec Agents\n'];
   
@@ -392,6 +490,19 @@ export function getAgentTemplates(agent: string): AgentTemplate[] {
         file: `${a.name}.md`,
         content: convertToOpenCodeFormat(a)
       }));
+    case 'kilo':
+      return agents.map(a => ({
+        dir: '.kilo/agents',
+        file: `${a.name}.md`,
+        content: convertToKiloFormat(a)
+      }));
+    case 'roo':
+      // Roo uses a single .roomodes file with all custom modes
+      return [{
+        dir: '.',
+        file: '.roomodes',
+        content: convertToRoomodesFormat(agents)
+      }];
     default:
       return [];
   }

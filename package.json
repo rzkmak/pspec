@@ -1,6 +1,6 @@
 {
   "name": "pspec",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "pspec (picospec) is the smallest specification toolkit for solo developers and AI agents",
   "main": "dist/index.js",
   "scripts": {
@@ -17,7 +17,9 @@
     "claude",
     "gemini",
     "cursor",
-    "opencode"
+    "opencode",
+    "roo",
+    "kilo"
   ],
   "author": "rzkmak",
   "license": "ISC",
