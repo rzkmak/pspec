@@ -48,7 +48,9 @@ describe('initCommand', () => {
         '.cursor/commands/pspec.debug.md'
       ]
     },
-    { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.commit-current-branch.md', '.opencode/commands/pspec.commit-raise-pr.md', '.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] }
+    { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.commit-current-branch.md', '.opencode/commands/pspec.commit-raise-pr.md', '.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] },
+    { agent: 'roo', expectedFiles: ['.roo/commands/pspec.commit-current-branch.md', '.roo/commands/pspec.commit-raise-pr.md', '.roo/commands/pspec.spec.md', '.roo/commands/pspec.plan.md', '.roo/commands/pspec.implement.md', '.roo/commands/pspec.debug.md'] },
+    { agent: 'kilo', expectedFiles: ['.kilo/commands/pspec.commit-current-branch.md', '.kilo/commands/pspec.commit-raise-pr.md', '.kilo/commands/pspec.spec.md', '.kilo/commands/pspec.plan.md', '.kilo/commands/pspec.implement.md', '.kilo/commands/pspec.debug.md'] }
   ];
 
   providers.forEach(({ agent, expectedFiles }) => {
@@ -256,6 +258,55 @@ describe('initCommand agent files', () => {
     const architectContent = fs.readFileSync(path.join(tmpDir, '.cursor/agents/architect.mdc'), 'utf-8');
     expect(architectContent).toContain('globs: "*"');
     expect(architectContent).toContain('name: architect');
+  });
+
+  it('should create agent definition files for kilo', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['kilo'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/architect.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/debugger.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/task_planner.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/generalist.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/investigator.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/implementator.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.kilo/agents/test_planner.md'))).toBe(true);
+
+    // Verify content matches Claude format
+    const architectContent = fs.readFileSync(path.join(tmpDir, '.kilo/agents/architect.md'), 'utf-8');
+    expect(architectContent).toContain('name: architect');
+    expect(architectContent).toContain('## Capabilities');
+    expect(architectContent).toContain('## Tools');
+    expect(architectContent).toContain('## Constraints');
+  });
+
+  it('should create .roomodes file for roo', async () => {
+    mockPrompt.mockResolvedValueOnce({ agents: ['roo'] });
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    await initCommand();
+
+    // Roo uses a single .roomodes file at root
+    expect(fs.existsSync(path.join(tmpDir, '.roomodes'))).toBe(true);
+    
+    const roomodesContent = fs.readFileSync(path.join(tmpDir, '.roomodes'), 'utf-8');
+    expect(roomodesContent).toContain('customModes:');
+    expect(roomodesContent).toContain('slug:');
+    expect(roomodesContent).toContain('name:');
+    expect(roomodesContent).toContain('roleDefinition:');
+    expect(roomodesContent).toContain('customInstructions:');
+    expect(roomodesContent).toContain('groups:');
+    
+    // Should have all 7 agents
+    expect(roomodesContent).toContain('slug: "architect"');
+    expect(roomodesContent).toContain('slug: "task-planner"');
+    expect(roomodesContent).toContain('slug: "generalist"');
+    expect(roomodesContent).toContain('slug: "investigator"');
+    expect(roomodesContent).toContain('slug: "debugger"');
+    expect(roomodesContent).toContain('slug: "implementator"');
+    expect(roomodesContent).toContain('slug: "test-planner"');
   });
 
   it('should ask user when agent files already exist', async () => {
