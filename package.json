@@ -1,11 +1,11 @@
 {
   "name": "pspec",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "pspec (picospec) is the smallest specification toolkit for solo developers and AI agents",
   "main": "dist/index.js",
   "scripts": {
     "test": "jest",
-    "build": "rm -rf dist && tsc && mkdir -p dist/templates/prompts dist/templates/agents && cp src/templates/prompts/*.md dist/templates/prompts/ && cp src/templates/agents/*.yaml dist/templates/agents/ && node dist/transform-agents.js dist/templates/agents dist/agents",
+    "build": "rm -rf dist && tsc && mkdir -p dist/templates/prompts && cp src/templates/prompts/*.md dist/templates/prompts/",
     "prepack": "npm run build",
     "report:budgets": "node dist/report-template-budgets.js"
   },
@@ -29,12 +29,10 @@
     "chalk": "^4.1.2",
     "commander": "^14.0.3",
     "enquirer": "^2.4.1",
-    "js-yaml": "^4.1.1",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/js-yaml": "^4.0.9",
     "jest": "^30.3.0",
     "ts-jest": "^29.4.9",
     "typescript": "^5.9.3"

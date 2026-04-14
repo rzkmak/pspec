@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { AVAILABLE_AGENTS, getAgentPrompt } from './templates';
 
 export interface BudgetRow {
   name: string;
@@ -19,7 +18,7 @@ export function countWords(text: string): number {
 }
 
 function formatRow(row: BudgetRow): string {
-  return `${row.name.padEnd(18)} chars=${String(row.chars).padStart(4)} words=${String(row.words).padStart(4)} tokens~=${String(row.tokens).padStart(4)}`;
+  return `${row.name.padEnd(32)} chars=${String(row.chars).padStart(4)} words=${String(row.words).padStart(4)} tokens~=${String(row.tokens).padStart(4)}`;
 }
 
 function summarize(rows: BudgetRow[]): BudgetRow {
@@ -51,34 +50,15 @@ export function getCommandPromptBudgets(): BudgetRow[] {
     });
 }
 
-export function getCompiledAgentPromptBudgets(): BudgetRow[] {
-  return [...AVAILABLE_AGENTS]
-    .map(name => {
-      const prompt = getAgentPrompt(name);
-      return {
-        name,
-        chars: prompt.length,
-        words: countWords(prompt),
-        tokens: estimateTokenCount(prompt)
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
 export function buildBudgetReport(): string {
   const commandRows = getCommandPromptBudgets();
-  const compiledRows = getCompiledAgentPromptBudgets();
 
   return [
     'Prompt Budget Report',
     '',
     'Command prompts',
     ...commandRows.map(formatRow),
-    formatRow(summarize(commandRows)),
-    '',
-    'Compiled agent prompts',
-    ...compiledRows.map(formatRow),
-    formatRow(summarize(compiledRows))
+    formatRow(summarize(commandRows))
   ].join('\n');
 }
 

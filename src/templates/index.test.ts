@@ -1,7 +1,6 @@
-import { getTemplates, templates, getAgent, getAgentPrompt, listAgents, AVAILABLE_AGENTS, getAgentTemplates } from './index';
+import { getTemplates, templates } from './index';
 
 const wordCount = (text: string) => text.trim().split(/\s+/).length;
-const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
 describe('templates', () => {
   it('should have templates for all supported agents', () => {
@@ -61,12 +60,12 @@ describe('templates', () => {
       expect(implementTemplate).toBeDefined();
       expect(implementTemplate?.dir).toBe('.cursor/rules');
       expect(implementTemplate?.content).toContain('globs: "*"');
-      expect(implementTemplate?.content).toContain('You are a Senior Software Engineer and Orchestrator using the pspec framework.');
+      expect(implementTemplate?.content).toContain('You are a Senior Software Engineer using the pspec framework.');
 
       expect(implementCommandTemplate).toBeDefined();
       expect(implementCommandTemplate?.dir).toBe('.cursor/commands');
-      expect(implementCommandTemplate?.content).toContain('description: "Implement tasks from a checklist using sub-agents"');
-      expect(implementCommandTemplate?.content).toContain('You are a Senior Software Engineer and Orchestrator using the pspec framework.');
+      expect(implementCommandTemplate?.content).toContain('description: "Implement tasks from a checklist"');
+      expect(implementCommandTemplate?.content).toContain('You are a Senior Software Engineer using the pspec framework.');
 
       expect(cursorTemplates.some(t => t.file === 'pspec.commit-raise-pr.mdc')).toBe(true);
       expect(cursorTemplates.some(t => t.file === 'pspec.commit-current-branch.md')).toBe(true);
@@ -74,12 +73,12 @@ describe('templates', () => {
   });
 
   describe('debug templates', () => {
-    it('should be correctly formatted as a general debugging tool', () => {
+    it('should be correctly formatted as a debugging tool', () => {
       const geminiTemplates = getTemplates('gemini');
       const debugTemplate = geminiTemplates.find(t => t.file === 'pspec.debug.toml');
       
       expect(debugTemplate).toBeDefined();
-      expect(debugTemplate?.content).toContain('description = "Investigate and resolve errors in the project using sub-agents"');
+      expect(debugTemplate?.content).toContain('description = "Investigate and resolve errors in the project"');
       expect(debugTemplate?.content).toContain('You are an AI Debugging Expert using the pspec framework.');
     });
   });
@@ -121,25 +120,25 @@ describe('templates', () => {
         },
         {
           file: 'pspec.spec.md',
-          maxWords: 220,
+          maxWords: 280,
           required: ['Draft immediately when the request is concrete.', 'Ask 0-3 targeted questions only when ambiguity would materially change the spec.', '<epoch-ms>-<slug>.md', 'copy-pasteable command with that stem'],
           forbidden: ['3 to 7', 'Approval Gate 1', 'Resource Cleanup']
         },
         {
           file: 'pspec.plan.md',
-          maxWords: 320,
-          required: ['Default to one planning pass.', 'Use `investigator` only when codebase patterns are unclear.', 'reuse its `<epoch-ms>-<slug>` stem', 'copy-pasteable command using that exact stem'],
+          maxWords: 380,
+          required: ['Default to one planning pass.', 'reuse its `<epoch-ms>-<slug>` stem', 'copy-pasteable command using that exact stem'],
           forbidden: ['Spawn a `test_planner` agent', 'Resource Cleanup']
         },
         {
           file: 'pspec.implement.md',
-          maxWords: 300,
+          maxWords: 380,
           required: ['Default to direct execution.', 'AGENTS.md` or `CLAUDE.md`', 'Verify by risk, not by checkbox:', 'same `<epoch-ms>-<slug>` stem'],
           forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task']
         },
         {
           file: 'pspec.debug.md',
-          maxWords: 250,
+          maxWords: 320,
           required: ['Start with direct triage.', 'Use parallel investigation only for distinct hypotheses'],
           forbidden: ['grep_search', 'Resource Cleanup']
         }
@@ -152,387 +151,6 @@ describe('templates', () => {
         expect(wordCount(template!.content)).toBeLessThan(maxWords);
         required.forEach(snippet => expect(template!.content).toContain(snippet));
         forbidden.forEach(snippet => expect(template!.content).not.toContain(snippet));
-      });
-    });
-  });
-});
-
-describe('agents', () => {
-  describe('AVAILABLE_AGENTS', () => {
-    it('should contain all 4 hardcoded agents', () => {
-      expect(AVAILABLE_AGENTS).toHaveLength(4);
-      expect(AVAILABLE_AGENTS).toContain('architect');
-      expect(AVAILABLE_AGENTS).toContain('generalist');
-      expect(AVAILABLE_AGENTS).toContain('investigator');
-      expect(AVAILABLE_AGENTS).toContain('debugger');
-    });
-  });
-
-  describe('listAgents', () => {
-    it('should return all available agent names', () => {
-      const agents = listAgents();
-      expect(agents).toHaveLength(4);
-      expect(agents).toEqual(expect.arrayContaining(AVAILABLE_AGENTS));
-    });
-  });
-
-  describe('getAgent', () => {
-    it('should load architect agent correctly', () => {
-      const agent = getAgent('architect');
-      expect(agent.name).toBe('architect');
-      expect(agent.description).toBeDefined();
-      expect(agent.capabilities).toBeInstanceOf(Array);
-      expect(agent.tools).toBeInstanceOf(Object);
-      expect(agent.constraints).toBeInstanceOf(Array);
-      expect(agent.communication).toBeDefined();
-      expect(agent.communication.style).toBeDefined();
-      expect(agent.communication.format).toBeDefined();
-      expect(agent.entry_triggers?.length).toBeGreaterThan(0);
-      expect(agent.non_goals?.length).toBeGreaterThan(0);
-      expect(agent.handoff_rules?.payload).toEqual(['Reason', 'Next', 'Context', 'Open']);
-      expect(agent.completion_threshold?.length).toBeGreaterThan(0);
-    });
-
-    it('should load all 4 agents successfully', () => {
-      AVAILABLE_AGENTS.forEach(agentName => {
-        const agent = getAgent(agentName);
-        expect(agent.name).toBe(agentName);
-        expect(agent.description).toBeDefined();
-        expect(agent.capabilities.length).toBeGreaterThan(0);
-        expect(agent.tools).toBeInstanceOf(Object);
-        // Check that at least one tool category is enabled
-        const hasTools = Object.values(agent.tools).some(
-          enabled => enabled === true
-        );
-        expect(hasTools).toBe(true);
-        expect(agent.constraints.length).toBeGreaterThan(0);
-        expect(agent.entry_triggers?.length).toBeGreaterThan(0);
-        expect(agent.non_goals?.length).toBeGreaterThan(0);
-        expect(agent.handoff_rules?.primary).toBeDefined();
-        expect(agent.handoff_rules?.payload).toEqual(['Reason', 'Next', 'Context', 'Open']);
-        expect((agent.handoff_rules?.secondary || []).length).toBeLessThanOrEqual(2);
-        expect(agent.completion_threshold?.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('should throw error for unknown agent', () => {
-      expect(() => getAgent('unknown_agent' as any)).toThrow('Agent template not found');
-    });
-  });
-
-  describe('getAgentPrompt', () => {
-    it('should return formatted prompt string', () => {
-      const prompt = getAgentPrompt('generalist');
-      expect(prompt).toContain('# GENERALIST');
-      expect(prompt).toContain('## Capabilities');
-      expect(prompt).toContain('## Available Tools');
-      expect(prompt).toContain('## Constraints');
-      expect(prompt).toContain('## Entry Triggers');
-      expect(prompt).toContain('## Non-Goals');
-      expect(prompt).toContain('## Decision Rules');
-      expect(prompt).toContain('## Handoff Rules');
-      expect(prompt).toContain('## Completion Threshold');
-      expect(prompt).toContain('## Execution Notes');
-      expect(prompt).toContain('## Output Format');
-      expect(prompt).toContain('Handover:');
-    });
-
-    it('should include all agents required sections', () => {
-      AVAILABLE_AGENTS.forEach(agentName => {
-        const prompt = getAgentPrompt(agentName);
-        expect(prompt).toContain(`# ${agentName.toUpperCase()}`);
-        expect(prompt).toContain('## Capabilities');
-        expect(prompt).toContain('## Available Tools');
-        expect(prompt).toContain('## Constraints');
-        expect(prompt).toContain('## Entry Triggers');
-        expect(prompt).toContain('## Non-Goals');
-        expect(prompt).toContain('## Decision Rules');
-        expect(prompt).toContain('## Handoff Rules');
-        expect(prompt).toContain('## Completion Threshold');
-        expect(prompt).toContain('## Execution Notes');
-        expect(prompt).toContain('## Output Format');
-        expect(prompt).toContain('Handover:');
-      });
-    });
-
-    it('should keep compiled prompts within lean token budgets', () => {
-      const perAgentBudget = 650;
-      const totalBudget = 2400;
-
-      const tokenCounts = AVAILABLE_AGENTS.map(agentName => estimateTokens(getAgentPrompt(agentName)));
-
-      tokenCounts.forEach(count => expect(count).toBeLessThan(perAgentBudget));
-      expect(tokenCounts.reduce((sum, count) => sum + count, 0)).toBeLessThan(totalBudget);
-    });
-  });
-});
-
-describe('getAgentTemplates', () => {
-  it('should return agent templates in claude format', () => {
-    const templates = getAgentTemplates('claude');
-    expect(templates.length).toBe(4);
-    
-    const architectTemplate = templates.find(t => t.file === 'architect.md');
-    expect(architectTemplate).toBeDefined();
-    expect(architectTemplate?.dir).toBe('.claude/agents');
-    expect(architectTemplate?.content).toContain('name: architect');
-    expect(architectTemplate?.content).toContain('## Capabilities');
-    expect(architectTemplate?.content).toContain('## Tools');
-    expect(architectTemplate?.content).toContain('## Constraints');
-  });
-
-  it('should return agent templates in gemini format', () => {
-    const templates = getAgentTemplates('gemini');
-    expect(templates.length).toBe(4);
-    
-    const architectTemplate = templates.find(t => t.file === 'architect.toml');
-    expect(architectTemplate).toBeDefined();
-    expect(architectTemplate?.dir).toBe('.gemini/agents');
-    expect(architectTemplate?.content).toContain('name = "architect"');
-    expect(architectTemplate?.content).toContain('[tools]');
-    expect(architectTemplate?.content).toContain('[communication]');
-  });
-
-  it('should return agent templates in cursor format', () => {
-    const templates = getAgentTemplates('cursor');
-    expect(templates.length).toBe(4);
-    
-    const architectTemplate = templates.find(t => t.file === 'architect.mdc');
-    expect(architectTemplate).toBeDefined();
-    expect(architectTemplate?.dir).toBe('.cursor/agents');
-    expect(architectTemplate?.content).toContain('globs: "*"');
-  });
-
-  it('should return agent templates in opencode format', () => {
-    const templates = getAgentTemplates('opencode');
-    expect(templates.length).toBe(4);
-    
-    const architectTemplate = templates.find(t => t.file === 'architect.md');
-    expect(architectTemplate).toBeDefined();
-    expect(architectTemplate?.dir).toBe('.opencode/agents');
-  });
-
-  it('should return agent templates in kilo format', () => {
-    const templates = getAgentTemplates('kilo');
-    expect(templates.length).toBe(4);
-    
-    const architectTemplate = templates.find(t => t.file === 'architect.md');
-    expect(architectTemplate).toBeDefined();
-    expect(architectTemplate?.dir).toBe('.kilo/agents');
-    expect(architectTemplate?.content).toContain('name: architect');
-    expect(architectTemplate?.content).toContain('## Capabilities');
-    expect(architectTemplate?.content).toContain('## Tools');
-    expect(architectTemplate?.content).toContain('## Constraints');
-  });
-
-  it('should return .roomodes file for roo format', () => {
-    const templates = getAgentTemplates('roo');
-    expect(templates.length).toBe(1);
-    
-    const roomodesTemplate = templates[0];
-    expect(roomodesTemplate.file).toBe('.roomodes');
-    expect(roomodesTemplate.dir).toBe('.');
-    expect(roomodesTemplate.content).toContain('customModes:');
-    expect(roomodesTemplate.content).toContain('slug:');
-    expect(roomodesTemplate.content).toContain('name:');
-    expect(roomodesTemplate.content).toContain('roleDefinition:');
-    expect(roomodesTemplate.content).toContain('customInstructions:');
-    expect(roomodesTemplate.content).toContain('groups:');
-  });
-
-  it('should return empty array for unknown agent', () => {
-    const templates = getAgentTemplates('unknown');
-    expect(templates).toEqual([]);
-  });
-
-  it('should include all agent fields in claude format', () => {
-    const templates = getAgentTemplates('claude');
-    const generalistTemplate = templates.find(t => t.file === 'generalist.md');
-    
-    expect(generalistTemplate?.content).toContain('## Decision Rules');
-    expect(generalistTemplate?.content).toContain('## Execution Notes');
-    expect(generalistTemplate?.content).toContain('Match naming and export conventions exactly');
-    expect(generalistTemplate?.content).toContain('Reason / Next / Context / Open');
-    expect(generalistTemplate?.content).toContain('## Handoff Rules');
-  });
-
-  it('should include architect planning guidance in gemini format', () => {
-    const templates = getAgentTemplates('gemini');
-    const architectTemplate = templates.find(t => t.file === 'architect.toml');
-    
-      expect(architectTemplate?.content).toContain('Sequence: setup');
-      expect(architectTemplate?.content).toContain('## Completion Threshold');
-    });
-
-  it('should match snapshots for representative agent outputs across targets', () => {
-    const targets = ['claude', 'gemini', 'cursor', 'opencode', 'kilo', 'roo'] as const;
-    const agents = ['architect', 'generalist', 'debugger'] as const;
-
-    const snapshots = Object.fromEntries(
-      targets.map(target => {
-        const templates = getAgentTemplates(target);
-        return [
-          target,
-          Object.fromEntries(
-            agents.map(agentName => {
-              if (target === 'roo') {
-                // Roo has a single .roomodes file
-                const template = templates.find(t => t.file === '.roomodes');
-                return [agentName, template?.content];
-              }
-              const ext = target === 'gemini' ? 'toml' : target === 'cursor' ? 'mdc' : 'md';
-              const template = templates.find(t => t.file === `${agentName}.${ext}`);
-              return [agentName, template?.content];
-            })
-          )
-        ];
-      })
-    );
-
-    expect(snapshots).toMatchSnapshot();
-  });
-
-  describe('edge cases', () => {
-    it('should handle agent with missing optional fields gracefully', () => {
-        // investigator has a narrower tool set and still compiles correctly
-        const templates = getAgentTemplates('claude');
-        const investigatorTemplate = templates.find(t => t.file === 'investigator.md');
-        
-        expect(investigatorTemplate).toBeDefined();
-        // Should still have required fields
-        expect(investigatorTemplate?.content).toContain('name: investigator');
-      expect(investigatorTemplate?.content).toContain('## Capabilities');
-      expect(investigatorTemplate?.content).toContain('## Constraints');
-      expect(investigatorTemplate?.content).toContain('## Execution Notes');
-      expect(investigatorTemplate?.content).toContain('## Handoff Rules');
-      });
-
-    it('should handle agent with empty tool categories', () => {
-      // investigator only has read and delegate tools, no modify or verify
-      const agent = getAgent('investigator');
-      
-      expect(agent.tools.modify).toBeUndefined();
-      expect(agent.tools.verify).toBeUndefined();
-      expect(agent.tools.read).toBe(true);
-      expect(agent.tools.delegate).toBe(true);
-      
-      // Template generation should handle missing categories
-      const templates = getAgentTemplates('claude');
-      const investigatorTemplate = templates.find(t => t.file === 'investigator.md');
-      expect(investigatorTemplate?.content).toContain('## Tools');
-      expect(investigatorTemplate?.content).toContain('- Read: read, glob, grep');
-      expect(investigatorTemplate?.content).toContain('- Delegate: task');
-    });
-
-    it('should handle agent with all optional fields', () => {
-      // generalist has pattern_matching
-      const agent = getAgent('generalist');
-      
-      expect(agent.pattern_matching).toBeDefined();
-      expect(agent.pattern_matching?.length).toBeGreaterThan(0);
-      
-      const templates = getAgentTemplates('claude');
-      const generalistTemplate = templates.find(t => t.file === 'generalist.md');
-      expect(generalistTemplate?.content).toContain('AGENTS.md or CLAUDE.md');
-      expect(generalistTemplate?.content).toContain('Match local test structure and assertion style');
-    });
-
-    it('should handle agent with guidelines', () => {
-      const agent = getAgent('architect');
-      
-      expect(agent.guidelines).toBeDefined();
-      expect(agent.guidelines?.length).toBeGreaterThan(0);
-      
-      const templates = getAgentTemplates('claude');
-      const architectTemplate = templates.find(t => t.file === 'architect.md');
-      expect(architectTemplate?.content).toContain('Sequence: setup');
-      expect(architectTemplate?.content).toContain('Plan only to the level needed to unblock execution');
-    });
-
-    it('should handle agent with role field', () => {
-      // architect has role
-      const agent = getAgent('architect');
-      
-      expect(agent.role).toBeDefined();
-      expect(agent.role?.length).toBeGreaterThan(0);
-      
-      const templates = getAgentTemplates('claude');
-      const architectTemplate = templates.find(t => t.file === 'architect.md');
-      expect(architectTemplate?.content).toContain('Design the minimum architecture and implementation plan needed');
-    });
-
-    it('should handle agent without role field', () => {
-      const agent = getAgent('investigator');
-      
-      expect(agent.role).toBeUndefined();
-      
-      // getAgentPrompt should use description as fallback
-      const prompt = getAgentPrompt('investigator');
-      expect(prompt).toContain('You are an agent specialized in');
-    });
-
-    it('should generate valid TOML for gemini format without syntax errors', () => {
-      const templates = getAgentTemplates('gemini');
-      
-      templates.forEach(template => {
-        // Check for proper TOML structure
-        expect(template.content).toContain('name = ');
-        expect(template.content).toContain('description = ');
-        expect(template.content).toContain('[tools]');
-        expect(template.content).toContain('[communication]');
-        expect(template.content).toContain('prompt = """');
-        expect(template.content).toContain('"""');
-        
-        // Should not have YAML-style key: value outside prompt block
-        const lines = template.content.split('\n');
-        let inPromptBlock = false;
-        lines.forEach(line => {
-          if (line.includes('prompt = """')) {
-            inPromptBlock = true;
-          } else if (line === '"""') {
-            inPromptBlock = false;
-          } else if (!inPromptBlock && line.trim() && !line.startsWith('#')) {
-            // Outside prompt block should use TOML format
-            expect(line).toMatch(/^\w+\s*=|^\[|^\s*$|^#/);
-          }
-        });
-      });
-    });
-
-    it('should generate valid Markdown with frontmatter for claude format', () => {
-      const templates = getAgentTemplates('claude');
-      
-      templates.forEach(template => {
-        // Should start with ---
-        expect(template.content.startsWith('---')).toBe(true);
-        // Should have YAML frontmatter structure
-        expect(template.content).toContain('name:');
-        expect(template.content).toContain('description:');
-        // Should have sections after frontmatter
-        expect(template.content).toContain('## Capabilities');
-      });
-    });
-
-    it('should handle getAgentPrompt for all agents without errors', () => {
-      AVAILABLE_AGENTS.forEach(agentName => {
-        const prompt = getAgentPrompt(agentName);
-        
-        // Should have required sections
-        expect(prompt).toContain(`# ${agentName.toUpperCase()}`);
-        expect(prompt).toContain('## Capabilities');
-        expect(prompt).toContain('## Available Tools');
-        expect(prompt).toContain('## Constraints');
-        expect(prompt).toContain('## Entry Triggers');
-        expect(prompt).toContain('## Non-Goals');
-        expect(prompt).toContain('## Decision Rules');
-        expect(prompt).toContain('## Handoff Rules');
-        expect(prompt).toContain('## Completion Threshold');
-        expect(prompt).toContain('## Execution Notes');
-        expect(prompt).toContain('## Output Format');
-        expect(prompt).toContain('Handover:');
-        
-        // Should not be empty
-        expect(prompt.length).toBeGreaterThan(100);
       });
     });
   });

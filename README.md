@@ -18,7 +18,7 @@ It is designed to work seamlessly alongside your favorite AI coding agents: Clau
 - **Token Efficient:** Uses a single spec `*.md` and task `*.tasks.md` file for context instead of massive chat histories.
 - **Visual-First:** Encourages Mermaid.js diagrams over long, confusing paragraphs.
 - **Data Dictionaries:** Uses simple Markdown tables for data modeling instead of strict, unreadable JSON schemas.
-- **Sub-Agent Orchestration:** It instructs your main AI agent to act as an orchestrator, delegating implementation to parallel sub-agents to preserve your context window.
+- **Direct Execution:** The AI implements tasks directly following embedded constraints and patterns, without complex orchestration layers.
 
 ---
 
@@ -85,16 +85,15 @@ Once you are happy with the spec, use the planning command to break it down.
 - It will show you the exact file path so you can review the generated tasks and ask for your approval before proceeding.
 
 ### Step 4: Implement and Execute
-Once the checklist is generated, hand the wheel over to the AI to orchestrate the implementation.
+Once the checklist is generated, hand the wheel over to the AI to implement the tasks.
 
 **Command:**
 ```text
 /pspec.implement 1742451234567-auth
 ```
 - If you don't provide a spec name, the AI will use the most recently updated matching task file.
-- **Sub-Agent Delegation:** To prevent context bloat, the AI will read the first `- [ ]` task and delegate the actual coding to a sub-agent.
-- **Parallelization:** If tasks are independent (e.g., backend and frontend), it will spawn multiple sub-agents to execute them simultaneously!
-- **Empirical Verification:** The sub-agent will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
+- **Direct Execution:** The AI reads tasks directly and implements them following the embedded constraints and your project's style guidelines.
+- **Empirical Verification:** The AI will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
 - It will change the checkbox to `- [x]` and stop to wait for your review.
 
 ### Step 5: Debugging and Maintenance
@@ -104,9 +103,9 @@ If you encounter bugs, compile errors, or failing tests (whether during implemen
 ```text
 /pspec.debug [error log or description]
 ```
-- **Context Isolation:** The AI will automatically search the codebase for the error's source and spawn an isolated sub-agent to find a fix.
+- **Direct Triage:** The AI will automatically search the codebase for the error's source and fix it directly.
 - **Repro-First:** It will create a minimal reproduction script to confirm the bug before applying a fix.
-- **Parallel Hypotheses:** If there are multiple potential causes, it can investigate them in parallel to find the solution faster!
+- **Parallel Investigation:** If there are multiple potential causes, it can investigate them to find the solution faster.
 - **PSpec-Aware:** It will check if the bug is related to any active tasks or existing specs to ensure consistency.
 
 ### Step 6: Commit Helpers
@@ -142,75 +141,61 @@ your-project/
 │   │   └── 1742451234567-auth.md  # The "Intent" (Markdown/Mermaid)
 │   └── tasks/
 │       └── 1742451234567-auth.tasks.md # The "Execution" (Checklists)
-├── .opencode/                     # Default agent integration
-│   ├── agents/
-│   │   ├── architect.md
-│   │   ├── debugger.md
-│   │   └── ...
+├── .opencode/                     # OpenCode agent commands
 │   └── commands/
 │       ├── pspec.commit-current-branch.md
 │       ├── pspec.commit-raise-pr.md
 │       ├── pspec.spec.md
 │       ├── pspec.plan.md
-│       └── pspec.implement.md
-├── .gemini/                       # Optional: alternative agent integration
-│   ├── agents/
-│   │   ├── architect.toml
-│   │   ├── debugger.toml
-│   │   └── ...
+│       ├── pspec.implement.md
+│       └── pspec.debug.md
+├── .gemini/                       # Gemini CLI commands
 │   └── commands/
 │       ├── pspec.commit-current-branch.toml
 │       ├── pspec.commit-raise-pr.toml
 │       ├── pspec.spec.toml
 │       ├── pspec.plan.toml
-│       └── pspec.implement.toml
-├── .claude/                       # Optional: alternative agent integration
-│   ├── agents/
-│   │   ├── architect.md
-│   │   ├── debugger.md
-│   │   └── ...
+│       ├── pspec.implement.toml
+│       └── pspec.debug.toml
+├── .claude/                       # Claude Code commands
 │   └── commands/
 │       ├── pspec.commit-current-branch.md
 │       ├── pspec.commit-raise-pr.md
 │       ├── pspec.spec.md
 │       ├── pspec.plan.md
-│       └── pspec.implement.md
-├── .cursor/                       # Optional: alternative agent integration
-│   ├── agents/
-│   │   ├── architect.mdc
-│   │   ├── debugger.mdc
-│   │   └── ...
+│       ├── pspec.implement.md
+│       └── pspec.debug.md
+├── .cursor/                       # Cursor rules and commands
 │   ├── commands/
 │   │   ├── pspec.commit-current-branch.md
 │   │   ├── pspec.commit-raise-pr.md
 │   │   ├── pspec.spec.md
 │   │   ├── pspec.plan.md
-│   │   └── pspec.implement.md
+│   │   ├── pspec.implement.md
+│   │   └── pspec.debug.md
 │   └── rules/
 │       ├── pspec.commit-current-branch.mdc
 │       ├── pspec.commit-raise-pr.mdc
 │       ├── pspec.spec.mdc
 │       ├── pspec.plan.mdc
-│       └── pspec.implement.mdc
-├── .roo/                          # Optional: alternative agent integration
-│   ├── commands/
-│   │   ├── pspec.commit-current-branch.md
-│   │   ├── pspec.commit-raise-pr.md
-│   │   ├── pspec.spec.md
-│   │   ├── pspec.plan.md
-│   │   └── pspec.implement.md
-│   └── .roomodes                  # Roo Code custom modes configuration
-├── .kilo/                         # Optional: alternative agent integration
-│   ├── agents/
-│   │   ├── architect.md
-│   │   ├── debugger.md
-│   │   └── ...
+│       ├── pspec.implement.mdc
+│       └── pspec.debug.mdc
+├── .roo/                          # Roo Code commands
 │   └── commands/
 │       ├── pspec.commit-current-branch.md
 │       ├── pspec.commit-raise-pr.md
 │       ├── pspec.spec.md
 │       ├── pspec.plan.md
-│       └── pspec.implement.md
+│       ├── pspec.implement.md
+│       └── pspec.debug.md
+├── .kilo/                         # Kilo Code commands
+│   └── commands/
+│       ├── pspec.commit-current-branch.md
+│       ├── pspec.commit-raise-pr.md
+│       ├── pspec.spec.md
+│       ├── pspec.plan.md
+│       ├── pspec.implement.md
+│       └── pspec.debug.md
 ├── src/                           # Your actual code
 └── package.json
 ```

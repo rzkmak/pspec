@@ -1,4 +1,4 @@
-import { buildBudgetReport, countWords, estimateTokenCount, getCommandPromptBudgets, getCompiledAgentPromptBudgets } from './report-template-budgets';
+import { buildBudgetReport, countWords, estimateTokenCount, getCommandPromptBudgets } from './report-template-budgets';
 
 describe('report-template-budgets', () => {
   it('should estimate tokens from character count', () => {
@@ -30,23 +30,12 @@ describe('report-template-budgets', () => {
     });
   });
 
-  it('should report budgets for all compiled agent prompts', () => {
-    const rows = getCompiledAgentPromptBudgets();
-
-    expect(rows).toHaveLength(4);
-    expect(rows.find(row => row.name === 'architect')?.tokens).toBeLessThan(650);
-    expect(rows.find(row => row.name === 'generalist')?.tokens).toBeLessThan(650);
-    expect(rows.find(row => row.name === 'debugger')?.tokens).toBeLessThan(650);
-  });
-
   it('should build a readable report', () => {
     const report = buildBudgetReport();
 
     expect(report).toContain('Prompt Budget Report');
     expect(report).toContain('Command prompts');
-    expect(report).toContain('Compiled agent prompts');
     expect(report).toContain('pspec.spec.md');
-    expect(report).toContain('generalist');
     expect(report).toContain('TOTAL');
   });
 });
