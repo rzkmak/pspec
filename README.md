@@ -79,22 +79,84 @@ Once you are happy with the spec, use the planning command to break it down.
 /pspec.plan 1742451234567-auth
 ```
 - If you don't provide a spec name, the AI will choose the most relevant recent spec.
-- **Sequencing:** The AI will read the spec and create a strict, logically sequenced checklist in `.pspec/tasks/1742451234567-auth.tasks.md` (Data -> Logic -> UI -> Edge Cases -> Automated Tests).
+- **Sequencing:** The AI reads the spec and produces a strictly sequenced task file at `.pspec/tasks/1742451234567-auth.tasks.md`, following the order: setup → core logic → integration → validation → tests.
 - **Naming:** Spec files use the format `<epoch-ms>-<slug>.md`, and task files reuse the same stem as `<epoch-ms>-<slug>.tasks.md`.
-- **Next Command Hint:** After writing the task file, it should suggest a ready-to-run follow-up like `/pspec.implement 1742451234567-auth`.
+- **Next Command Hint:** After writing the task file, it suggests a ready-to-run follow-up like `/pspec.implement 1742451234567-auth`.
 - It will show you the exact file path so you can review the generated tasks and ask for your approval before proceeding.
 
+**Task file format:**
+
+Task files are hybrid Markdown + YAML documents. A YAML frontmatter block provides shared context for the whole file (key files, commands, conventions). Each task is a YAML code block under its own heading:
+
+```yaml
+---
+spec: .pspec/specs/1742451234567-auth.md
+stem: 1742451234567-auth
+created: 2024-01-17T14:30:00Z
+context:
+  key_files:
+    - src/auth/
+    - src/types/
+  patterns:
+    - "Follow handler pattern in src/users/handlers.ts"
+  commands:
+    test: "npm test"
+    lint: "npm run lint"
+    build: "npm run build"
+  conventions:
+    naming: "camelCase functions, PascalCase types"
+    exports: "Named exports only"
+---
+```
+
+```yaml
+## Task 1
+id: 1
+title: Create User type definition
+tag: TRIVIAL
+spec_ref: "Section 2.1: Data Model"
+depends_on: []
+files:
+  create:
+    - path: src/types/user.ts
+      description: "User interface and auth-related types"
+    - path: src/types/user.test.ts
+      description: "Type-level tests for User definitions"
+  modify: []
+  reference:
+    - path: src/types/post.ts
+      reason: "Follow existing type definition pattern"
+approach: |
+  1. Create src/types/user.ts
+  2. Define User interface with id, email, passwordHash, createdAt
+  3. Define UserCreateInput omitting id and createdAt
+  4. Define UserResponse omitting passwordHash
+  5. Export all types as named exports
+inputs: null
+outputs: null
+verify:
+  command: "npm run build"
+  expected: "Build succeeds with no type errors"
+done_when:
+  - "User, UserCreateInput, UserResponse exported from src/types/user.ts"
+  - "Build passes"
+```
+
+Every task includes an `approach` (numbered steps), `files.reference` (patterns to follow), `verify` (exact command and expected outcome), and `done_when` (checkable acceptance criteria). Test files are always included for every new file and every new function or method introduced.
+
 ### Step 4: Implement and Execute
-Once the checklist is generated, hand the wheel over to the AI to implement the tasks.
+Once the task file is generated, hand the wheel over to the AI to implement the tasks.
 
 **Command:**
 ```text
 /pspec.implement 1742451234567-auth
 ```
 - If you don't provide a spec name, the AI will use the most recently updated matching task file.
-- **Direct Execution:** The AI reads tasks directly and implements them following the embedded constraints and your project's style guidelines.
-- **Empirical Verification:** The AI will write the code, autonomously run your tests/linters, fix any errors, and only report back when the build is green.
-- It will change the checkbox to `- [x]` and stop to wait for your review.
+- **Context-First:** The AI parses the YAML frontmatter to get key files, conventions, and commands — no redundant codebase exploration.
+- **Sequential Execution:** Tasks run in `id` order, respecting `depends_on`. `CRITICAL` tasks run one at a time with full verification. Adjacent `TRIVIAL` tasks with the same dependencies are batched.
+- **Test Coverage:** For every new file and every new function or method, the AI creates or updates the corresponding test file.
+- **Empirical Verification:** The AI runs the exact `verify.command` from the task, checks every item in `done_when`, and only marks a task `[x]` when all criteria pass.
+- It reports a compact result (status, files changed, verification outcome) when all tasks are complete.
 
 ### Step 5: Debugging and Maintenance
 If you encounter bugs, compile errors, or failing tests (whether during implementation or in normal development), use the debug command.

@@ -126,14 +126,14 @@ describe('templates', () => {
         },
         {
           file: 'pspec.plan.md',
-          maxWords: 380,
-          required: ['Default to one planning pass.', 'reuse its `<epoch-ms>-<slug>` stem', 'copy-pasteable command using that exact stem'],
+          maxWords: 800,
+          required: ['Default to one planning pass.', 'reuse its `<epoch-ms>-<slug>` stem', 'copy-pasteable command using that exact stem', 'hybrid Markdown + YAML', 'approach', 'done_when'],
           forbidden: ['Spawn a `test_planner` agent', 'Resource Cleanup']
         },
         {
           file: 'pspec.implement.md',
-          maxWords: 380,
-          required: ['Default to direct execution.', 'AGENTS.md` or `CLAUDE.md`', 'Verify by risk, not by checkbox:', 'same `<epoch-ms>-<slug>` stem'],
+          maxWords: 700,
+          required: ['Parse the YAML frontmatter', 'Execute tasks in strict `id` order', 'batch adjacent TRIVIAL tasks', 'execute one at a time'],
           forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task']
         },
         {
