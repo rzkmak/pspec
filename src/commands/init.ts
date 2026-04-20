@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
-import { getTemplates } from '../templates';
+import { getTemplates, getSubagentRoleTemplates } from '../templates';
 // Use require for enquirer to avoid commonjs/esm interop issues with its types
 const { prompt } = require('enquirer');
 
@@ -83,6 +83,15 @@ export async function initCommand() {
       }
     }
   }
+
+  // Write subagent role files to .pspec/subagent-roles/
+  const roleTemplates = getSubagentRoleTemplates();
+  for (const template of roleTemplates) {
+    const targetDir = path.join(process.cwd(), template.dir);
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.writeFileSync(path.join(targetDir, template.file), template.content);
+  }
+  console.log(chalk.green(`Wrote ${roleTemplates.length} subagent role files to .pspec/subagent-roles/`));
 
   console.log(chalk.green('pspec initialized/updated successfully!'));
 }

@@ -7,6 +7,7 @@ When asked to /pspec.implement, use this execution policy:
    - Follow `context.patterns` for implementation style
    - Use `context.commands` for test, lint, and build invocations
    - Apply `context.conventions` for naming and export style
+   - Check `subagent` config for concurrency and failure settings
 3. Before any edits, read `AGENTS.md` or `CLAUDE.md` if present. These override `context.conventions` when they conflict.
 4. Execute tasks in strict `id` order. Do not start a task until all tasks listed in its `depends_on` are marked `[x]`.
 5. For each task:
@@ -23,10 +24,35 @@ When asked to /pspec.implement, use this execution policy:
 7. If a batch fails and you cannot resolve it quickly, switch to debugging mode. Resume implementation once the failure is fixed.
 8. Continue through all tasks unless the user explicitly asks to stop at a checkpoint.
 9. Return a compact result when all tasks are done:
-   - completed tasks
-   - files changed
-   - verification runs and status
-   - open blockers, if any
+   - completed tasks, files changed, verification runs and status, open blockers
+
+## Subagent Orchestration
+
+When a task has `parallelizable: true`, follow this protocol:
+
+### Pre-flight Token Check
+Count subtasks. Estimate: `investigator`-only → 1,500 tokens; single role → 3,000; multi-role → 4,500. If `total_estimated > subagent.token_budget` (default 50,000), calculate `safe_parallelism = floor(budget / avg)` and group subtasks into sequential batches of that size.
+
+### Compose System Prompt
+For each subtask concatenate: (1) `.pspec/subagent-roles/_base.md`, (2) `.pspec/subagent-roles/<role>.md` for each role in `subtask.roles`, (3) a context block with subtask title, parent task, attempt number, scope files, and approach.
+
+### Spawn and Collect
+Spawn up to `subagent.max_concurrent` subagents at a time (default 4). For each completed subagent, parse its YAML output and populate `result` in the task file:
+
+```yaml
+result:
+  status: completed
+  attempt: <N>
+  summary:
+    - "finding"
+  files_touched: [...]
+  verification: passed|failed|skipped
+```
+
+If a subagent fails and `attempts < max_retries + 1`, queue for retry after the current batch. If retries exhausted, mark `status: exhausted`.
+
+### Finalize
+Apply `subagent.on_final_failure` for any exhausted subtasks: `partial` → proceed with available results; `abort` → stop task; `skip` → mark `[x]` with note. Aggregate all completed summaries into `aggregate_result` (max 10 bullets, deduplicated). Run `verify.command`, check `done_when`, mark task `[x]`.
 
 ## Constraints
 
@@ -37,10 +63,7 @@ When asked to /pspec.implement, use this execution policy:
 - `TRIVIAL` tasks: batch adjacent tasks with matching `depends_on`
 - Validate every `done_when` criterion before marking `[x]`
 - Match naming and export conventions exactly
-- Match local test structure and assertion style
 - Prefer existing helpers over new abstractions
-- Run the smallest sufficient verification first, then full suite before final handoff
-- Keep implementation scoped to the stated task
 - Never commit changes unless explicitly asked
 
 ## Output

@@ -19,6 +19,7 @@ It is designed to work seamlessly alongside your favorite AI coding agents: Clau
 - **Visual-First:** Encourages Mermaid.js diagrams over long, confusing paragraphs.
 - **Data Dictionaries:** Uses simple Markdown tables for data modeling instead of strict, unreadable JSON schemas.
 - **Direct Execution:** The AI implements tasks directly following embedded constraints and patterns, without complex orchestration layers.
+- **Parallel Subagents:** Token-efficient parallel execution with role-specific system prompts — spawn subagents only when beneficial, inline simple tasks.
 
 ---
 
@@ -43,6 +44,7 @@ npx pspec@latest
 ```
 - It will prompt you for your preferred AI agent (Claude, Gemini, Cursor, etc.).
 - It will create the `.pspec/specs/` and `.pspec/tasks/` directories.
+- It will write subagent role files to `.pspec/subagent-roles/` for parallel task execution.
 - It will automatically inject custom commands into your project (e.g., `.gemini/commands/pspec.plan.toml` or `.cursor/rules/pspec.implement.mdc`) so your AI agent natively understands the framework and provides autocomplete commands like `/pspec.spec`.
 - **Note:** If you already have `.pspec` in your project, running this command will **update** your local AI instructions to the latest version without overwriting your specs or tasks.
 
@@ -80,6 +82,7 @@ Once you are happy with the spec, use the planning command to break it down.
 ```
 - If you don't provide a spec name, the AI will choose the most relevant recent spec.
 - **Sequencing:** The AI reads the spec and produces a strictly sequenced task file at `.pspec/tasks/1742451234567-auth.tasks.md`, following the order: setup → core logic → integration → validation → tests.
+- **Parallelization:** The planner automatically marks tasks as `parallelizable: true` when work spans multiple independent modules with no data dependencies. It infers appropriate roles (e.g., `security-analyst`, `typescript-engineer`) from file patterns and context keywords.
 - **Naming:** Spec files use the format `<epoch-ms>-<slug>.md`, and task files reuse the same stem as `<epoch-ms>-<slug>.tasks.md`.
 - **Next Command Hint:** After writing the task file, it suggests a ready-to-run follow-up like `/pspec.implement 1742451234567-auth`.
 - It will show you the exact file path so you can review the generated tasks and ask for your approval before proceeding.
@@ -93,6 +96,11 @@ Task files are hybrid Markdown + YAML documents. A YAML frontmatter block provid
 spec: .pspec/specs/1742451234567-auth.md
 stem: 1742451234567-auth
 created: 2024-01-17T14:30:00Z
+subagent:
+  max_concurrent: 4
+  max_retries: 1
+  on_final_failure: partial
+  token_budget: 50000
 context:
   key_files:
     - src/auth/
@@ -142,6 +150,47 @@ done_when:
   - "Build passes"
 ```
 
+**Parallelizable task with subtasks:**
+
+```yaml
+## Task 3
+id: 3
+title: Audit security vulnerabilities
+tag: CRITICAL
+spec_ref: "Section 4.2: Security"
+depends_on: []
+parallelizable: true
+subtasks:
+  - id: 3.1
+    title: Audit authentication module
+    roles: [security-analyst, typescript-engineer]
+    scope:
+      files:
+        - src/auth/**/*.ts
+      keywords: []
+    approach: |
+      1. Review login flow for injection vulnerabilities
+      2. Check password hashing implementation
+    result: null
+  - id: 3.2
+    title: Audit API endpoints
+    roles: [security-analyst]
+    scope:
+      files:
+        - src/api/**/*.ts
+      keywords: []
+    approach: |
+      1. Check CSRF protection on POST endpoints
+      2. Verify rate limiting
+    result: null
+aggregate_result: null
+verify:
+  command: "npm run security-audit"
+  expected: "No new CRITICAL or HIGH vulnerabilities"
+done_when:
+  - "All CRITICAL/HIGH issues documented"
+```
+
 Every task includes an `approach` (numbered steps), `files.reference` (patterns to follow), `verify` (exact command and expected outcome), and `done_when` (checkable acceptance criteria). Test files are always included for every new file and every new function or method introduced.
 
 ### Step 4: Implement and Execute
@@ -154,6 +203,11 @@ Once the task file is generated, hand the wheel over to the AI to implement the 
 - If you don't provide a spec name, the AI will use the most recently updated matching task file.
 - **Context-First:** The AI parses the YAML frontmatter to get key files, conventions, and commands — no redundant codebase exploration.
 - **Sequential Execution:** Tasks run in `id` order, respecting `depends_on`. `CRITICAL` tasks run one at a time with full verification. Adjacent `TRIVIAL` tasks with the same dependencies are batched.
+- **Parallel Subagent Execution:** For tasks marked `parallelizable: true`, the AI spawns subagents with role-specific system prompts:
+  - Token budget check: auto-reduces parallelism if estimated tokens exceed budget
+  - Role-based prompt composition: base prompt + role-specific files from `.pspec/subagent-roles/`
+  - Max concurrency and retry handling per `subagent` config in frontmatter
+  - Condensed YAML summaries returned from each subagent, aggregated into `aggregate_result`
 - **Test Coverage:** For every new file and every new function or method, the AI creates or updates the corresponding test file.
 - **Empirical Verification:** The AI runs the exact `verify.command` from the task, checks every item in `done_when`, and only marks a task `[x]` when all criteria pass.
 - It reports a compact result (status, files changed, verification outcome) when all tasks are complete.
@@ -167,7 +221,7 @@ If you encounter bugs, compile errors, or failing tests (whether during implemen
 ```
 - **Direct Triage:** The AI will automatically search the codebase for the error's source and fix it directly.
 - **Repro-First:** It will create a minimal reproduction script to confirm the bug before applying a fix.
-- **Parallel Investigation:** If there are multiple potential causes, it can investigate them to find the solution faster.
+- **Parallel Investigation:** If there are multiple potential causes, it spawns subagents per hypothesis with `debugger` + language-specific roles to find the solution faster.
 - **PSpec-Aware:** It will check if the bug is related to any active tasks or existing specs to ensure consistency.
 
 ### Step 6: Commit Helpers
@@ -199,6 +253,14 @@ A project using `pspec` will look like this:
 your-project/
 ├── .pspec/
 │   ├── pspec.json                 # Auto-generated config
+│   ├── subagent-roles/            # Role-specific system prompts for parallel execution
+│   │   ├── _base.md               # Base subagent rules (always injected)
+│   │   ├── typescript-engineer.md
+│   │   ├── kotlin-engineer.md
+│   │   ├── test-creator.md
+│   │   ├── debugger.md
+│   │   ├── security-analyst.md
+│   │   └── investigator.md        # Lightweight, default role
 │   ├── specs/
 │   │   └── 1742451234567-auth.md  # The "Intent" (Markdown/Mermaid)
 │   └── tasks/
@@ -261,3 +323,55 @@ your-project/
 ├── src/                           # Your actual code
 └── package.json
 ```
+
+---
+
+## Subagent System (Parallel Execution)
+
+pspec includes a token-efficient parallel execution system for tasks that can be broken into independent subtasks.
+
+### How It Works
+
+1. **Planner** (`/pspec.plan`) detects parallelizable work and generates subtasks with `result: null` placeholders
+2. **Implementer** (`/pspec.implement`) spawns subagents for parallelizable tasks:
+   - Composes system prompt from `_base.md` + role-specific files
+   - Respects `max_concurrent` and auto-batches if token budget exceeded
+   - Collects condensed YAML summaries, handles retries, aggregates into `aggregate_result`
+3. **Debugger** (`/pspec.debug`) spawns subagents per hypothesis when root cause is unclear
+
+### Built-in Roles
+
+| Role | Best For | File Patterns |
+|------|----------|---------------|
+| `investigator` | Finding files, tracing paths | Default, lightweight |
+| `typescript-engineer` | TS implementation, types | `*.ts`, `*.tsx` |
+| `kotlin-engineer` | Kotlin implementation | `*.kt`, `*.kts` |
+| `test-creator` | Writing tests | `*.test.*`, `*.spec.*` |
+| `debugger` | Tracing failures | Error context |
+| `security-analyst` | Security audits | auth, crypto keywords |
+
+Roles can be combined: `roles: [security-analyst, typescript-engineer]` for a TypeScript security audit.
+
+> **Why roles instead of specialized agents?** Agentic tools (OpenCode, Cursor, Claude Code, etc.) automatically load all agent definitions into their command palette. Creating specialized agents for each role would clutter the UI and make the system harder to manage. Instead, pspec uses **role-specific system prompts** that are dynamically injected when spawning subagents — giving you the benefits of specialization without the UI overhead.
+
+### Subagent Output Format
+
+Every subagent returns a structured YAML summary (max 5 bullet points):
+
+```yaml
+summary:
+  - "[file:line] finding description"
+  - "OK: verified X is safe"
+files_touched:
+  - src/auth/login.ts
+verification: passed|failed|skipped
+blocked_reason: null
+```
+
+This keeps token usage minimal while giving the main agent actionable, condensed information.
+
+---
+
+## Architecture
+
+See [AGENTS.md](./AGENTS.md) for detailed architecture documentation for AI agents and contributors.

@@ -26,6 +26,53 @@ When asked to /pspec.plan, use this planning policy:
 17. Ask for approval only once, after the task file is written.
 18. When offering the next step, include a copy-pasteable command using that exact stem, for example `/pspec.implement 1742451234567-add-login`.
 
+## Parallelization Rules
+
+Mark `parallelizable: true` when work spans multiple independent modules, no data dependency exists between subtasks, and there are at least 2 subtasks. Do NOT parallelize `TRIVIAL` tasks (batch instead), single-scope tasks, or when subtasks have sequential dependencies.
+
+### Role Inference (priority order)
+1. Context keywords: "security/audit/crypto" → `security-analyst`; "test/coverage" → `test-creator`; "debug/fix/error" → `debugger`; "find/locate" → `investigator`
+2. File patterns: `*.ts|*.tsx` → `typescript-engineer`; `*.kt|*.kts` → `kotlin-engineer`; `*.test.*|*.spec.*` → `test-creator`
+3. Combine roles when context overlaps (security audit on TS → `[security-analyst, typescript-engineer]`)
+4. Default: `investigator`
+
+### Parallelizable Task Shape
+
+```yaml
+id: <N>
+parallelizable: true
+subtasks:
+  - id: <N.1>
+    title: ...
+    roles: [...]
+    scope:
+      files: [...]
+      keywords: []
+    approach: |
+      1. step
+    result: null
+aggregate_result: null
+verify:
+  command: "..."
+  expected: "..."
+done_when:
+  - "..."
+```
+
+Subtask `scope.files` must NOT overlap between siblings. Add `result: null` on every subtask.
+
+### Frontmatter Subagent Config
+
+When any task is `parallelizable: true`, add to frontmatter:
+
+```yaml
+subagent:
+  max_concurrent: 4
+  max_retries: 1
+  on_final_failure: partial
+  token_budget: 50000
+```
+
 ## Task File Format
 
 Write the task file as a hybrid Markdown + YAML document.
@@ -52,58 +99,46 @@ context:
 ---
 ```
 
-### Task Blocks (one YAML code block per task, under a Markdown heading)
+### Task Blocks
 
-```
-## Task <N>
 ```yaml
-id: <sequential integer>
-title: <concise action phrase>
+## Task <N>
+id: <N>
+title: <action phrase>
 tag: <TRIVIAL|CRITICAL>
-spec_ref: "<spec section or AC reference>"
+spec_ref: "<section or AC ref>"
+parallelizable: false
 depends_on:
-  - id: <task id>
-    title: "<task title>"
+  - id: <id>
+    title: "<title>"
 files:
   create:
-    - path: <file path>
-      description: <what this file does>
+    - path: <path>
+      description: <desc>
   modify:
-    - path: <file path>
-      description: <what to change>
+    - path: <path>
+      description: <desc>
   reference:
-    - path: <file path>
-      reason: <why to reference this>
+    - path: <path>
+      reason: <reason>
 approach: |
-  1. <step one>
-  2. <step two>
-  ...
-inputs: <for functions or APIs: input parameters with types; null if not applicable>
-outputs: <for functions or APIs: return values or response schema; null if not applicable>
+  1. step
+inputs: <types or null>
+outputs: <types or null>
 verify:
-  command: "<verification command>"
-  expected: "<expected outcome>"
+  command: "<cmd>"
+  expected: "<outcome>"
 done_when:
-  - "<checkable acceptance criterion>"
+  - "<criterion>"
 ```
 
-```
-
-### Rules for task detail
-
-- Every task must have all fields populated. No field may be omitted or left null except `inputs` and `outputs` for non-API tasks.
-- `approach` must be numbered steps specific enough that no further investigation is needed before coding starts.
-- `files.reference` must always point to at least one existing file to anchor the implementation pattern.
-- `done_when` must be a list of concrete, independently checkable statements.
-- For `CRITICAL` tasks, also include `inputs` and `outputs` with full type and status code detail.
+Every task must have all fields. `approach` steps must be specific enough to start coding without further investigation. `files.reference` must point to at least one existing file. `done_when` must be independently checkable. For `CRITICAL` tasks, include full `inputs`/`outputs` with type and status detail.
 
 ## Constraints
 
-- Prefer task blocks over long narrative plans
-- Document only touched APIs and decisions
+- Prefer task blocks over narrative plans
 - Sequence: setup -> core logic -> integration -> validation -> tests
-- Call out blockers and migration risks only when they matter
-- No token budget limit — completeness and clarity take priority over brevity
+- No token budget limit — completeness takes priority over brevity
 
 ## Output
 

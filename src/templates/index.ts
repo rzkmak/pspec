@@ -15,6 +15,30 @@ const loadPrompt = (name: string): string => {
   return fs.readFileSync(filePath, 'utf-8').trim();
 };
 
+const SUBAGENT_ROLE_NAMES = [
+  '_base',
+  'typescript-engineer',
+  'kotlin-engineer',
+  'test-creator',
+  'debugger',
+  'security-analyst',
+  'investigator',
+];
+
+const loadSubagentRole = (name: string): string => {
+  const filePath = path.join(__dirname, '..', 'subagent', 'roles', `${name}.md`);
+  if (!fs.existsSync(filePath)) {
+    return `SUBAGENT_ROLE_ERROR: ${name}.md not found at ${filePath}`;
+  }
+  return fs.readFileSync(filePath, 'utf-8').trim();
+};
+
+export const subagentRoleTemplates: Template[] = SUBAGENT_ROLE_NAMES.map((name) => ({
+  dir: '.pspec/subagent-roles',
+  file: `${name}.md`,
+  content: loadSubagentRole(name),
+}));
+
 const commandPrompts: Record<string, { desc: string, prompt: string }> = {
   'pspec.commit-current-branch': {
     desc: 'Commit current work on the current branch and push',
@@ -113,4 +137,8 @@ ${data.prompt}
 
 export function getTemplates(agent: string): Template[] {
   return templates[agent] || [];
+}
+
+export function getSubagentRoleTemplates(): Template[] {
+  return subagentRoleTemplates;
 }
