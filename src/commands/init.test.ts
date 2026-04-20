@@ -178,5 +178,120 @@ describe('initCommand', () => {
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Initialization cancelled.'));
     expect(fs.existsSync(path.join(tmpDir, '.pspec'))).toBe(false);
   });
-  
+
+  describe('subagent role renewal', () => {
+    it('should create subagent role files on first init', async () => {
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      await initCommand();
+
+      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
+      expect(fs.existsSync(subagentDir)).toBe(true);
+      expect(fs.existsSync(path.join(subagentDir, '_base.md'))).toBe(true);
+      expect(fs.existsSync(path.join(subagentDir, 'typescript-engineer.md'))).toBe(true);
+      expect(fs.existsSync(path.join(subagentDir, 'investigator.md'))).toBe(true);
+
+      // Check for sync summary in console output
+      const syncLog = consoleSpy.mock.calls.find(call =>
+        call[0].includes('Synced subagent roles')
+      );
+      expect(syncLog).toBeDefined();
+      expect(syncLog![0]).toMatch(/Synced subagent roles \(\d+ added\)/);
+    });
+
+    it('should update existing role files and report changes', async () => {
+      // First init to create roles
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      await initCommand();
+
+      // Modify one role file to simulate old content
+      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
+      fs.writeFileSync(path.join(subagentDir, '_base.md'), 'OLD CONTENT');
+
+      // Reset console spy for second init
+      consoleSpy.mockClear();
+
+      // Second init should update the file
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      await initCommand();
+
+      // Verify file was updated
+      const baseContent = fs.readFileSync(path.join(subagentDir, '_base.md'), 'utf-8');
+      expect(baseContent).not.toBe('OLD CONTENT');
+      expect(baseContent).toContain('Subagent');
+
+      // Check for updated summary
+      const syncLog = consoleSpy.mock.calls.find(call =>
+        call[0].includes('Synced subagent roles')
+      );
+      expect(syncLog).toBeDefined();
+      expect(syncLog![0]).toMatch(/Synced subagent roles \(\d+ updated\)/);
+    });
+
+    it('should preserve custom user roles not in SUBAGENT_ROLE_NAMES', async () => {
+      // First init to create roles
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      await initCommand();
+
+      // Add a custom user role
+      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
+      fs.writeFileSync(path.join(subagentDir, 'my-custom-role.md'), 'Custom role content');
+
+      // Reset console spy for second init
+      consoleSpy.mockClear();
+
+      // Second init should preserve the custom role (we don't auto-delete)
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      await initCommand();
+
+      // Verify custom role still exists
+      expect(fs.existsSync(path.join(subagentDir, 'my-custom-role.md'))).toBe(true);
+      const customContent = fs.readFileSync(path.join(subagentDir, 'my-custom-role.md'), 'utf-8');
+      expect(customContent).toBe('Custom role content');
+    });
+
+    it('should handle empty subagent-roles directory', async () => {
+      // Create .pspec but no subagent-roles
+      fs.mkdirSync(path.join(tmpDir, '.pspec'));
+      fs.mkdirSync(path.join(tmpDir, '.pspec/specs'));
+      fs.mkdirSync(path.join(tmpDir, '.pspec/tasks'));
+
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      await initCommand();
+
+      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
+      expect(fs.existsSync(subagentDir)).toBe(true);
+      expect(fs.readdirSync(subagentDir).filter(f => f.endsWith('.md')).length).toBeGreaterThan(0);
+
+      const syncLog = consoleSpy.mock.calls.find(call =>
+        call[0].includes('Synced subagent roles')
+      );
+      expect(syncLog![0]).toMatch(/Synced subagent roles \(\d+ added\)/);
+    });
+
+    it('should report no changes when roles are already in sync', async () => {
+      // First init to create roles
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      await initCommand();
+
+      // Reset console spy for second init
+      consoleSpy.mockClear();
+
+      // Second init immediately after first (files already match)
+      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
+      await initCommand();
+
+      // Check for "no changes" summary
+      const syncLog = consoleSpy.mock.calls.find(call =>
+        call[0].includes('Synced subagent roles')
+      );
+      expect(syncLog![0]).toContain('Synced subagent roles (no changes)');
+    });
+  });
 });
