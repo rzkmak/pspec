@@ -89,39 +89,32 @@ export async function initCommand() {
   const subagentRolesDir = path.join(process.cwd(), '.pspec/subagent-roles');
   fs.mkdirSync(subagentRolesDir, { recursive: true });
 
-  // Read existing role files
-  const existingFiles = fs.existsSync(subagentRolesDir)
-    ? fs.readdirSync(subagentRolesDir).filter(f => f.endsWith('.md'))
-    : [];
-
-  // Identify and remove stale files (not in current SUBAGENT_ROLE_NAMES)
-  const expectedFiles = SUBAGENT_ROLE_NAMES.map(name => `${name}.md`);
-  const staleFiles = existingFiles.filter(f => !expectedFiles.includes(f));
-  for (const staleFile of staleFiles) {
-    fs.unlinkSync(path.join(subagentRolesDir, staleFile));
-    console.log(chalk.yellow(`Removed stale role: ${staleFile}`));
-  }
-
   // Write/update role files and track changes
+  // Note: We don't delete stale files to avoid accidentally removing custom user roles.
+  // Users can manually delete old pspec roles if needed.
   let addedCount = 0;
   let updatedCount = 0;
   for (const template of roleTemplates) {
     const filePath = path.join(subagentRolesDir, template.file);
     const existed = fs.existsSync(filePath);
-    fs.writeFileSync(filePath, template.content);
     if (existed) {
-      updatedCount++;
+      // Check if content actually changed
+      const existingContent = fs.readFileSync(filePath, 'utf-8');
+      if (existingContent !== template.content) {
+        fs.writeFileSync(filePath, template.content);
+        updatedCount++;
+      }
+      // If content matches, don't count as updated (no-op)
     } else {
+      fs.writeFileSync(filePath, template.content);
       addedCount++;
     }
   }
 
   // Log summary
-  const removedCount = staleFiles.length;
   const parts = [];
   if (addedCount > 0) parts.push(`${addedCount} added`);
   if (updatedCount > 0) parts.push(`${updatedCount} updated`);
-  if (removedCount > 0) parts.push(`${removedCount} removed`);
   const summary = parts.length > 0 ? parts.join(', ') : 'no changes';
   console.log(chalk.green(`Synced subagent roles (${summary})`));
 
