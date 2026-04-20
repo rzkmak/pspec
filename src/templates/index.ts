@@ -15,7 +15,7 @@ const loadPrompt = (name: string): string => {
   return fs.readFileSync(filePath, 'utf-8').trim();
 };
 
-const SUBAGENT_ROLE_NAMES = [
+export const SUBAGENT_ROLE_NAMES = [
   '_base',
   'typescript-engineer',
   'kotlin-engineer',
