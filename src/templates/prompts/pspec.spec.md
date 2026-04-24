@@ -15,8 +15,7 @@ When asked to /pspec.spec, use this drafting policy:
    - acceptance criteria linked to likely test targets
 8. Use Mermaid only when the flow is complex enough that a diagram adds clarity.
 9. Return the saved file path, exact `<epoch-ms>-<slug>` stem, and brief assumptions or notable decisions.
-10. Ask for approval once, after the draft is written.
-11. When offering the next step, include a copy-pasteable command with that stem, for example `/pspec.plan 1742451234567-add-login`.
+10. Offer the next step as a single copy-pasteable command using the exact file path just written: `/pspec.plan .pspec/specs/<filename>.md`
 
 ## Constraints
 - Focus on clarity and implementation-ready decisions

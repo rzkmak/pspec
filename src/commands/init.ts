@@ -57,6 +57,12 @@ export async function initCommand() {
     fs.mkdirSync(path.join(pspecDir, 'tasks'), { recursive: true });
   }
 
+  // Create CONTEXT.md stub if it doesn't exist
+  const contextPath = path.join(pspecDir, 'CONTEXT.md');
+  if (!fs.existsSync(contextPath)) {
+    fs.writeFileSync(contextPath, '# Project Context\n\nAdd project-specific context here. When present, /pspec.spec treats this file as the primary source of truth.\n');
+  }
+
   // Write pspec.json config
   const pspecConfig = {
     ...config,
