@@ -34,14 +34,13 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          NORMALIZED_TAG=${RELEASE_TAG#v}
 
-          if [ "$NORMALIZED_TAG" != "$PACKAGE_VERSION" ]; then
+          if [ "$RELEASE_TAG" != "$PACKAGE_VERSION" ]; then
             echo "Release tag '$RELEASE_TAG' does not match package.json version '$PACKAGE_VERSION'." >&2
             exit 1
           fi
 
-          DIST_TAG=$(node -e "const version = process.argv[1]; const match = version.match(/-([0-9A-Za-z-]+)(?:\.|$)/); process.stdout.write(match ? match[1].toLowerCase() : 'latest');" "$NORMALIZED_TAG")
+          DIST_TAG=$(node -e "const version = process.argv[1]; const match = version.match(/-([0-9A-Za-z-]+)(?:\.|$)/); process.stdout.write(match ? match[1].toLowerCase() : 'latest');" "$RELEASE_TAG")
 
           echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
           echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"

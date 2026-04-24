@@ -239,8 +239,8 @@ If you want the agent to package current work for you, use one of the git helper
 
 ### Release Publishing
 - Add an `NPM_TOKEN` repository secret with publish access to the npm package.
-- Publishing is automated by `.github/workflows/npm-publish.yml`.
-- When a GitHub Release is published, the workflow installs dependencies, runs `npm test`, validates that the release tag matches `package.json` (`v0.0.7` and `0.0.7` both work), and then runs `npm publish`.
+- Publishing is automated by `.github/workflows/auto-release.yml`.
+- When the version in `package.json` changes on the master branch, the workflow automatically creates a GitHub Release and publishes to npm.
 - Stable releases publish with the npm dist-tag `latest`; prerelease versions such as `1.2.3-beta.1` publish to the matching dist-tag like `beta`.
 
 

@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: auto-release-${{ github.sha }}
@@ -42,12 +43,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view "v${{ steps.version.outputs.new }}" > /dev/null 2>&1; then
+          if gh release view "${{ steps.version.outputs.new }}" > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Release v${{ steps.version.outputs.new }} already exists"
+            echo "Release ${{ steps.version.outputs.new }} already exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Release v${{ steps.version.outputs.new }} does not exist"
+            echo "Release ${{ steps.version.outputs.new }} does not exist"
           fi
 
       - name: Determine prerelease
@@ -71,7 +72,36 @@ jobs:
           if [ "${{ steps.meta.outputs.prerelease }}" == "true" ]; then
             FLAGS="$FLAGS --prerelease"
           fi
-          gh release create "v${{ steps.version.outputs.new }}" \
-            --title "v${{ steps.version.outputs.new }}" \
+          gh release create "${{ steps.version.outputs.new }}" \
+            --title "${{ steps.version.outputs.new }}" \
             $FLAGS
-          echo "Created release v${{ steps.version.outputs.new }}"
+          echo "Created release ${{ steps.version.outputs.new }}"
+
+      - name: Set up Node.js
+        if: steps.version.outputs.changed == 'true' && steps.check.outputs.exists == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        if: steps.version.outputs.changed == 'true' && steps.check.outputs.exists == 'false'
+        run: npm ci
+
+      - name: Run test suite
+        if: steps.version.outputs.changed == 'true' && steps.check.outputs.exists == 'false'
+        run: npm test
+
+      - name: Determine npm dist-tag
+        if: steps.version.outputs.changed == 'true' && steps.check.outputs.exists == 'false'
+        id: release_meta
+        run: |
+          DIST_TAG=$(node -e "const version = process.argv[1]; const match = version.match(/-([0-9A-Za-z-]+)(?:\.|$)/); process.stdout.write(match ? match[1].toLowerCase() : 'latest');" "${{ steps.version.outputs.new }}")
+          echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Publish package to npm
+        if: steps.version.outputs.changed == 'true' && steps.check.outputs.exists == 'false'
+        run: npm publish --provenance --tag "${{ steps.release_meta.outputs.dist_tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
