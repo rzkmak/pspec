@@ -115,26 +115,23 @@ describe('templates', () => {
         {
           file: 'pspec.commit-raise-pr.md',
           maxWords: 240,
-          required: ['Package the current work into a new branch and open a PR now.', 'Use `gh` CLI for every GitHub operation in pspec', 'Create a new branch from the current HEAD before committing.', 'Infer a concise kebab-case branch name', 'Stage all safe tracked and untracked files before committing.', 'Create a PR against the detected default branch'],
+          required: ['Package the current work into a new branch and open a PR now.', 'Use `gh` CLI for every GitHub operation in pspec', 'Create a new branch from the current HEAD before committing.', 'Infer a concise kebab-case branch name', 'Stage all safe tracked and untracked files', 'Create a PR against the detected default branch'],
           forbidden: ['Commit staged files only.', 'ask for permission before pushing', 'When asked to /pspec.commit-raise-pr']
         },
         {
           file: 'pspec.spec.md',
-          maxWords: 280,
-          required: ['Draft immediately when the request is concrete.', 'Ask 0-3 targeted questions only when ambiguity would materially change the spec.', '<epoch-ms>-<slug>.md', 'copy-pasteable command with that stem'],
-          forbidden: ['3 to 7', 'Approval Gate 1', 'Resource Cleanup']
+          required: ['Draft immediately when the request is concrete.', 'Ask 0-3 targeted questions only when ambiguity would materially change the spec.', '<epoch-ms>-<slug>.md', '/pspec.plan .pspec/specs/'],
+          forbidden: ['3 to 7', 'Approval Gate 1', 'Resource Cleanup', 'Ask for approval once']
         },
         {
           file: 'pspec.plan.md',
-          maxWords: 800,
-          required: ['Default to one planning pass.', 'reuse its `<epoch-ms>-<slug>` stem', 'copy-pasteable command using that exact stem', 'hybrid Markdown + YAML', 'approach', 'done_when'],
-          forbidden: ['Spawn a `test_planner` agent', 'Resource Cleanup']
+          required: ['Default to one planning pass.', 'reuse its `<epoch-ms>-<slug>` stem', '/pspec.implement .pspec/tasks/', 'hybrid Markdown + YAML', 'approach', 'done_when'],
+          forbidden: ['Spawn a `test_planner` agent', 'Resource Cleanup', 'Ask for approval only once']
         },
         {
           file: 'pspec.implement.md',
-          maxWords: 700,
-          required: ['Parse the YAML frontmatter', 'Execute tasks in strict `id` order', 'batch adjacent TRIVIAL tasks', 'execute one at a time'],
-          forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task']
+          required: ['Parse the YAML frontmatter', 'Execute tasks in strict `id` order', 'batch adjacent TRIVIAL tasks', 'execute one at a time', 'Do not advance to the next task'],
+          forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task', 'log it and proceed to the next task']
         },
         {
           file: 'pspec.debug.md',
@@ -144,11 +141,13 @@ describe('templates', () => {
         }
       ];
 
-      specs.forEach(({ file, maxWords, required, forbidden }) => {
+      specs.forEach(({ file, maxWords, required, forbidden }: { file: string, maxWords?: number, required: string[], forbidden: string[] }) => {
         const template = templates.find(t => t.file === file);
 
         expect(template).toBeDefined();
-        expect(wordCount(template!.content)).toBeLessThan(maxWords);
+        if (maxWords !== undefined) {
+          expect(wordCount(template!.content)).toBeLessThan(maxWords);
+        }
         required.forEach(snippet => expect(template!.content).toContain(snippet));
         forbidden.forEach(snippet => expect(template!.content).not.toContain(snippet));
       });

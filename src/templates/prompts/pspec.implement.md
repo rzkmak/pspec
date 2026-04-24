@@ -18,11 +18,12 @@ When asked to /pspec.implement, use this execution policy:
    e. Run `verify.command` and confirm it matches `verify.expected`
    f. Check every item in `done_when` — all must be true before marking the task complete
    g. Mark the task `[x]` in the task file immediately after verification passes
+   h. Do not advance to the next task until steps 5e, 5f, and 5g are all confirmed. If `verify.command` fails or any `done_when` criterion is unmet, resolve the failure first — do not skip forward.
 6. Batching rules:
    - `TRIVIAL` tasks: batch adjacent TRIVIAL tasks that share the same `depends_on` values into one implementation pass
    - `CRITICAL` tasks: execute one at a time; run full verification before moving to the next task
 7. If a batch fails and you cannot resolve it quickly, switch to debugging mode. Resume implementation once the failure is fixed.
-8. Execute all tasks to completion in one uninterrupted run. Never pause between tasks or ask the user to continue. If a blocker cannot be quickly resolved, log it and proceed to the next task.
+8. Execute all tasks to completion in one uninterrupted run. Never pause between tasks or ask the user to continue. If a blocker is an unresolvable external dependency or configuration issue, mark the task `[~]` (blocked) with a note and proceed. Do not use this to bypass failed verification.
 9. Return a compact result when all tasks are done:
    - completed tasks, files changed, verification runs and status, open blockers
 

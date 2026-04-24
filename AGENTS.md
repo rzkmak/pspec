@@ -248,3 +248,27 @@ Word budgets ensure prompts remain token-efficient and focused.
 ```
 
 The subagent roles directory (`.pspec/subagent-roles/`) is always created on init/update and is not configurable.
+
+## CONTEXT.md
+
+`.pspec/CONTEXT.md` is an optional project-level context file created as an empty stub by `npx pspec`. When present, `/pspec.spec` treats it as the **primary source of truth** for project architecture, patterns, and constraints — taking precedence over codebase exploration.
+
+Fill it manually with:
+- Project architecture overview
+- Key constraints and non-negotiables
+- Tech stack and versions
+- Integration patterns or shared conventions
+
+Example:
+
+```markdown
+# Project Context
+
+## Architecture
+REST API with Express + PostgreSQL. All handlers in `src/handlers/`, models in `src/models/`.
+
+## Constraints
+- Node 20+, TypeScript strict mode
+- No default exports — named exports only
+- All DB access through repository layer, never direct in handlers
+```

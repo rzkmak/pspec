@@ -1,0 +1,77 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-release-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect version bump
+        id: version
+        run: |
+          NEW=$(cat package.json | jq -r '.version')
+          PREV=$(git show HEAD~1:package.json | jq -r '.version')
+          echo "new=$NEW" >> $GITHUB_OUTPUT
+          echo "prev=$PREV" >> $GITHUB_OUTPUT
+          if [ "$NEW" != "$PREV" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Version changed: $PREV → $NEW"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Version unchanged: $NEW"
+          fi
+
+      - name: Check if release already exists
+        if: steps.version.outputs.changed == 'true'
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "v${{ steps.version.outputs.new }}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.version.outputs.new }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.version.outputs.new }} does not exist"
+          fi
+
+      - name: Determine prerelease
+        if: steps.version.outputs.changed == 'true' && steps.check.outputs.exists == 'false'
+        id: meta
+        run: |
+          if [[ "${{ steps.version.outputs.new }}" == *"-"* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "Detected prerelease version"
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "Detected stable version"
+          fi
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.changed == 'true' && steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FLAGS="--generate-notes"
+          if [ "${{ steps.meta.outputs.prerelease }}" == "true" ]; then
+            FLAGS="$FLAGS --prerelease"
+          fi
+          gh release create "v${{ steps.version.outputs.new }}" \
+            --title "v${{ steps.version.outputs.new }}" \
+            $FLAGS
+          echo "Created release v${{ steps.version.outputs.new }}"
