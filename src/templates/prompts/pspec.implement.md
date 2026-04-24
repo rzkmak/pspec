@@ -22,7 +22,7 @@ When asked to /pspec.implement, use this execution policy:
    - `TRIVIAL` tasks: batch adjacent TRIVIAL tasks that share the same `depends_on` values into one implementation pass
    - `CRITICAL` tasks: execute one at a time; run full verification before moving to the next task
 7. If a batch fails and you cannot resolve it quickly, switch to debugging mode. Resume implementation once the failure is fixed.
-8. Continue through all tasks unless the user explicitly asks to stop at a checkpoint.
+8. Execute all tasks to completion in one uninterrupted run. Never pause between tasks or ask the user to continue. If a blocker cannot be quickly resolved, log it and proceed to the next task.
 9. Return a compact result when all tasks are done:
    - completed tasks, files changed, verification runs and status, open blockers
 
@@ -64,6 +64,7 @@ Apply `subagent.on_final_failure` for any exhausted subtasks: `partial` → proc
 - Validate every `done_when` criterion before marking `[x]`
 - Match naming and export conventions exactly
 - Prefer existing helpers over new abstractions
+- Never pause between tasks or ask for confirmation mid-run
 - Never commit changes unless explicitly asked
 
 ## Output
