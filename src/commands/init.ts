@@ -27,7 +27,7 @@ export async function initCommand() {
     }
   }
 
-  const choices = ['claude', 'gemini', 'cursor', 'opencode', 'roo', 'kilo'];
+  const choices = ['claude', 'gemini', 'cursor', 'opencode', 'antigravity', 'kilo'];
   let selectedAgents: string[] = [];
 
   try {

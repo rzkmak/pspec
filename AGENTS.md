@@ -53,7 +53,7 @@ export const templates: Record<string, Template[]> = {
   gemini: [...],      // .gemini/commands/*.toml
   cursor: [...],      // .cursor/commands/*.md + .cursor/rules/*.mdc
   opencode: [...],    // .opencode/commands/*.md
-  roo: [...],         // .roo/commands/*.md
+  antigravity: [...], // .agent/workflows/*.md + .agent/skills/pspec/SKILL.md
   kilo: [...],        // .kilo/commands/*.md
 };
 ```

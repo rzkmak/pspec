@@ -4,7 +4,7 @@ const wordCount = (text: string) => text.trim().split(/\s+/).length;
 
 describe('templates', () => {
   it('should have templates for all supported agents', () => {
-    const agents = ['claude', 'gemini', 'cursor', 'opencode', 'roo', 'kilo'];
+    const agents = ['claude', 'gemini', 'cursor', 'opencode', 'antigravity', 'kilo'];
     agents.forEach(agent => {
       expect(templates).toHaveProperty(agent);
       expect(Array.isArray(templates[agent])).toBe(true);
@@ -80,6 +80,46 @@ describe('templates', () => {
       expect(debugTemplate).toBeDefined();
       expect(debugTemplate?.content).toContain('description = "Investigate and resolve errors in the project"');
       expect(debugTemplate?.content).toContain('You are an AI Debugging Expert using the pspec framework.');
+    });
+  });
+
+  describe('antigravity templates', () => {
+    it('should be correctly formatted as Workflows and Skills', () => {
+      const antigravityTemplates = getTemplates('antigravity');
+      const specTemplate = antigravityTemplates.find(t => t.file === 'pspec.spec.md');
+      const skillTemplate = antigravityTemplates.find(t => t.file === 'SKILL.md');
+      
+      expect(specTemplate).toBeDefined();
+      expect(specTemplate?.dir).toBe('.agent/workflows');
+      expect(specTemplate?.content).toContain('---');
+      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new spec"');
+      expect(specTemplate?.content).toContain('# Pspec spec');
+      expect(specTemplate?.content).toContain('You are an AI Spec Architect using the pspec framework.');
+
+      expect(skillTemplate).toBeDefined();
+      expect(skillTemplate?.dir).toBe('.agent/skills/pspec');
+      expect(skillTemplate?.content).toContain('name: pspec');
+      expect(skillTemplate?.content).toContain('Spec-Driven Development (SDD) toolkit');
+    });
+  });
+
+  describe('antigravity templates', () => {
+    it('should be correctly formatted as Workflows and Skills', () => {
+      const antigravityTemplates = getTemplates('antigravity');
+      const specTemplate = antigravityTemplates.find(t => t.file === 'pspec.spec.md');
+      const skillTemplate = antigravityTemplates.find(t => t.file === 'SKILL.md');
+      
+      expect(specTemplate).toBeDefined();
+      expect(specTemplate?.dir).toBe('.agent/workflows');
+      expect(specTemplate?.content).toContain('---');
+      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new spec"');
+      expect(specTemplate?.content).toContain('# Pspec spec');
+      expect(specTemplate?.content).toContain('You are an AI Spec Architect using the pspec framework.');
+
+      expect(skillTemplate).toBeDefined();
+      expect(skillTemplate?.dir).toBe('.agent/skills/pspec');
+      expect(skillTemplate?.content).toContain('name: pspec');
+      expect(skillTemplate?.content).toContain('Spec-Driven Development (SDD) toolkit');
     });
   });
 

@@ -115,15 +115,44 @@ description: "${data.desc}"
 ${data.prompt}
 `
   })),
-  roo: Object.entries(commandPrompts).map(([name, data]) => ({
-    dir: '.roo/commands',
-    file: `${name}.md`,
-    content: `---
+  antigravity: [
+    ...Object.entries(commandPrompts).map(([name, data]) => ({
+      dir: '.agent/workflows',
+      file: `${name}.md`,
+      content: `---
 description: "${data.desc}"
 ---
+
+# ${name.replace('pspec.', 'Pspec ')}
+
 ${data.prompt}
 `
-  })),
+    })),
+    {
+      dir: '.agent/skills/pspec',
+      file: 'SKILL.md',
+      content: `---
+name: pspec
+description: Spec-Driven Development (SDD) toolkit for AI agents.
+---
+
+# pspec
+
+pspec is a toolkit for Spec-Driven Development. It uses:
+1. **Specs** (\`.pspec/specs/\`) — Intent documents
+2. **Tasks** (\`.pspec/tasks/\`) — Execution checklists
+3. **Subagent Roles** (\`.pspec/subagent-roles/\`) — Expertise prompts
+
+## Commands
+- \`/pspec.spec\`: Create a new spec
+- \`/pspec.plan\`: Plan tasks for a spec
+- \`/pspec.implement\`: Implement planned tasks
+- \`/pspec.debug\`: Investigate and fix errors
+- \`/pspec.commit-current-branch\`: Commit to current branch
+- \`/pspec.commit-raise-pr\`: Commit and raise PR
+`
+    }
+  ],
   kilo: Object.entries(commandPrompts).map(([name, data]) => ({
     dir: '.kilo/commands',
     file: `${name}.md`,

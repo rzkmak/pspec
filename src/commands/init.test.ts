@@ -49,7 +49,18 @@ describe('initCommand', () => {
       ]
     },
     { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.commit-current-branch.md', '.opencode/commands/pspec.commit-raise-pr.md', '.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] },
-    { agent: 'roo', expectedFiles: ['.roo/commands/pspec.commit-current-branch.md', '.roo/commands/pspec.commit-raise-pr.md', '.roo/commands/pspec.spec.md', '.roo/commands/pspec.plan.md', '.roo/commands/pspec.implement.md', '.roo/commands/pspec.debug.md'] },
+    {
+      agent: 'antigravity',
+      expectedFiles: [
+        '.agent/workflows/pspec.commit-current-branch.md',
+        '.agent/workflows/pspec.commit-raise-pr.md',
+        '.agent/workflows/pspec.spec.md',
+        '.agent/workflows/pspec.plan.md',
+        '.agent/workflows/pspec.implement.md',
+        '.agent/workflows/pspec.debug.md',
+        '.agent/skills/pspec/SKILL.md'
+      ]
+    },
     { agent: 'kilo', expectedFiles: ['.kilo/commands/pspec.commit-current-branch.md', '.kilo/commands/pspec.commit-raise-pr.md', '.kilo/commands/pspec.spec.md', '.kilo/commands/pspec.plan.md', '.kilo/commands/pspec.implement.md', '.kilo/commands/pspec.debug.md'] }
   ];
 
