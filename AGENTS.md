@@ -59,6 +59,8 @@ Each agent gets the same prompt content formatted for its command system.
 - Questions should include prefilled options and a custom-answer path.
 - It stops after asking questions and waits for answers.
 - After answers are collected, the agent runs a checklist review before drafting.
+- After the answers are sufficient, the agent finishes the full PRD drafting run in one pass.
+- It should not stop mid-phase to hand back a partial PRD, outline, todo list, checkpoint, or next-steps handoff when it can still complete the draft itself.
 
 The PRD should explicitly capture:
 - product goal and success outcome
@@ -71,6 +73,8 @@ The PRD should explicitly capture:
 The spec should use stable IDs:
 - acceptance criteria as `AC-*`
 - edge cases and failure modes as `EC-*`
+
+Before returning, the saved PRD should be audited for missing required sections, duplicate `AC-*` or `EC-*` IDs, contradictions, and placeholder text.
 
 ### 3. Feature Spec Planning
 
@@ -115,11 +119,14 @@ Each feature spec file is outcome-based and may cover multiple files. It should 
 - run a checklist review
 - write `PROGRESS.md` and feature spec files only after the question phase is complete
 
+After the answers are sufficient, the agent must finish the full planning run in one pass. It should not stop mid-phase to hand back a partial directory, draft files, a todo list, checkpoint, or next-steps handoff when it can still complete the plan itself.
+
 `/pspec.plan` must also fail closed:
 - stop if the spec is missing `AC-*` or `EC-*` IDs
 - include a `Coverage Map` in `PROGRESS.md`
 - map every `AC-*` and `EC-*` to at least one feature spec file
 - never save placeholder text in final plan files
+- audit the saved directory and fix mismatches between `PROGRESS.md`, feature spec files, frontmatter, filenames, and the coverage map before returning
 
 Feature spec contract additions:
 - `Data Model` lists all involved entities, types, fields, and relationships
@@ -145,6 +152,8 @@ End-to-end verification rules:
 
 `/pspec.implement` is serial and review-heavy.
 
+It must finish the full run whenever work remains runnable. It should not stop mid-run to hand back a todo list, checkpoint, or next-steps handoff when it can still diagnose, fix, verify, and continue itself.
+
 Flow:
 1. Read `PROGRESS.md`
 2. Read the source spec and extract all `AC-*` and `EC-*` IDs
@@ -168,6 +177,9 @@ Truthfulness rule:
 - if a required verification step cannot run because of environment or external dependency issues, mark the task blocked
 - do not return done while any `[ ]` or `[~]` remains in `PROGRESS.md`
 - do not ignore task-registry or coverage-map mismatches
+- use `partial` only when the current run completed at least one additional feature spec before an explicit blocker stopped it
+- use `blocked` only when the current run could not complete any additional feature spec because an explicit blocker stopped it
+- never use `partial` or `blocked` for a voluntary mid-run handoff
 
 ### 6. Debugging Flow
 

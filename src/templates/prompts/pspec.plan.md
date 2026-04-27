@@ -25,31 +25,35 @@ When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec 
 
 ## Phase 2 - Feature Spec Phase
 
-10. After the user answers, review the answers with this checklist:
+10. Once the question phase is complete and the answers are sufficient, finish the full planning run in one pass.
+11. Do not stop in the middle of Phase 2 to hand back a partial directory, draft files, TODO list, checkpoint, or "next steps" when you can still complete the plan yourself.
+12. If review or self-audit finds a gap, mismatch, missing section, or placeholder in the planned directory, fix it and continue instead of returning an incomplete plan.
+13. Only stop Phase 2 early when a required planning input is still missing, the PRD is invalid, or this prompt explicitly tells you to ask 1 short follow-up question and wait.
+14. After the user answers, review the answers with this checklist:
     - feature boundaries are clear
     - edge cases and failure modes are represented, not only the base flow
     - data model and API/UI contract expectations are concrete
     - unit and end-to-end verification expectations are concrete
     - dependencies and rollout constraints do not contradict the plan
-11. If one required category is still missing, ask 1 short follow-up question and wait again. Otherwise continue.
-12. Read the saved PRD and extract every `AC-*` and `EC-*` ID. If the PRD is missing these IDs, stop and report that the PRD must be fixed before planning.
-13. Write the feature-spec directory at `.pspec/tasks/<spec-stem>/`.
-14. Create `PROGRESS.md` inside that directory. `PROGRESS.md` is the completion tracker and shared context source for implementation.
-15. Create multiple feature spec files inside the same directory, named `<2-digit-id>-<slug>.md`.
-16. A feature spec is a cohesive implementation outcome, not a single file. One feature spec file may touch multiple production, test, config, or script files when they belong to the same change.
-17. Break work into atomic feature specs that one model can implement and verify end-to-end. Group tightly coupled files together. Split feature specs only when sequencing or review clarity improves.
-18. Tag feature specs to guide implementation intensity:
+15. If one required category is still missing, ask 1 short follow-up question and wait again. Otherwise continue.
+16. Read the saved PRD and extract every `AC-*` and `EC-*` ID. If the PRD is missing these IDs, stop and report that the PRD must be fixed before planning.
+17. Write the feature-spec directory at `.pspec/tasks/<spec-stem>/`.
+18. Create `PROGRESS.md` inside that directory. `PROGRESS.md` is the completion tracker and shared context source for implementation.
+19. Create multiple feature spec files inside the same directory, named `<2-digit-id>-<slug>.md`.
+20. A feature spec is a cohesive implementation outcome, not a single file. One feature spec file may touch multiple production, test, config, or script files when they belong to the same change.
+21. Break work into atomic feature specs that one model can implement and verify end-to-end. Group tightly coupled files together. Split feature specs only when sequencing or review clarity improves.
+22. Tag feature specs to guide implementation intensity:
     - `TRIVIAL` = quick, low-risk work; implement with 1 review pass
     - `CRITICAL` = risky or high-impact work; implement with 2 review passes
-19. Set `spec_ref` to exact requirement IDs from the PRD only. Each `spec_ref` item must be an `AC-*` or `EC-*` ID. Do not use free-form section names.
-20. Sequence feature specs to minimize blockers. Use setup -> core logic -> integration -> validation -> tests when that ordering fits.
-21. For every file listed under `### Create`, include corresponding tests or verification artifacts in the same feature spec when they are part of the same outcome.
-22. Sequence feature specs so `depends_on` always references lower feature-spec IDs. Use both the feature-spec ID and title in `depends_on` entries to avoid misreferences.
-23. In `PROGRESS.md`, `## Feature Specs` must list every feature spec file exactly once in numeric order.
-24. The filename and title in `## Feature Specs` must exactly match the real feature spec file and its frontmatter. Do not create orphan feature spec files and do not omit any feature spec file from `PROGRESS.md`.
-25. Add `## Coverage Map` to `PROGRESS.md`. Map every `AC-*` and `EC-*` from the PRD to one or more feature spec files.
-26. Do not finish the plan while any `AC-*` or `EC-*` ID has no mapped feature spec.
-27. Each feature spec file must use this exact section order:
+23. Set `spec_ref` to exact requirement IDs from the PRD only. Each `spec_ref` item must be an `AC-*` or `EC-*` ID. Do not use free-form section names.
+24. Sequence feature specs to minimize blockers. Use setup -> core logic -> integration -> validation -> tests when that ordering fits.
+25. For every file listed under `### Create`, include corresponding tests or verification artifacts in the same feature spec when they are part of the same outcome.
+26. Sequence feature specs so `depends_on` always references lower feature-spec IDs. Use both the feature-spec ID and title in `depends_on` entries to avoid misreferences.
+27. In `PROGRESS.md`, `## Feature Specs` must list every feature spec file exactly once in numeric order.
+28. The filename and title in `## Feature Specs` must exactly match the real feature spec file and its frontmatter. Do not create orphan feature spec files and do not omit any feature spec file from `PROGRESS.md`.
+29. Add `## Coverage Map` to `PROGRESS.md`. Map every `AC-*` and `EC-*` from the PRD to one or more feature spec files.
+30. Do not finish the plan while any `AC-*` or `EC-*` ID has no mapped feature spec.
+31. Each feature spec file must use this exact section order:
     - `# Goal`
     - `## Requirement Coverage`
     - `## Files`
@@ -62,39 +66,40 @@ When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec 
     - `## Approach`
     - `## Verification`
     - `## Definition Of Done`
-28. In `## Files`, use these exact subsections:
+32. In `## Files`, use these exact subsections:
     - `### Create`
     - `### Modify`
     - `### Reference`
-29. In `## Verification`, include these exact blocks:
+33. In `## Verification`, include these exact blocks:
     - `Base case`
     - `Unit tests`
     - `Edge cases`
     - `E2E`
-30. `## Data Model` must list all data entities, types, fields, and relationships involved in the feature spec.
-31. If the feature spec includes API work, `## API Contracts` must list all API endpoints involved with request and response shapes.
-32. If the feature spec includes web work, include all of these:
+34. `## Data Model` must list all data entities, types, fields, and relationships involved in the feature spec.
+35. If the feature spec includes API work, `## API Contracts` must list all API endpoints involved with request and response shapes.
+36. If the feature spec includes web work, include all of these:
     - `## UI States` with loading, empty, error, and success states when applicable
     - `## User Interactions` with each user action and expected outcome
     - `## Data Test IDs` with the `data-testid` values that must be defined up front and reused in code and tests
-33. If a section does not apply, write `Not applicable` instead of omitting it.
-34. Definition of done for every feature spec must require:
+37. If a section does not apply, write `Not applicable` instead of omitting it.
+38. Definition of done for every feature spec must require:
     - functional behavior finished
     - unit tests added or updated
     - edge cases implemented and verified
     - an end-to-end verification artifact
-35. End-to-end verification rules:
+39. End-to-end verification rules:
     - API work -> include an API call verification script
     - Web work -> include a Playwright script
     - Other work -> include the smallest runnable end-to-end verification artifact that exercises the real flow
-36. Do not save placeholder text like `<path>`, `<cmd>`, `<outcome>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` in `PROGRESS.md` or feature spec files. If a required value is unknown, ask a follow-up instead of writing files.
-37. Return:
+40. Do not save placeholder text like `<path>`, `<cmd>`, `<outcome>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` in `PROGRESS.md` or feature spec files. If a required value is unknown, ask a follow-up instead of writing files.
+41. Before returning, audit the saved directory and fix any mismatch between `PROGRESS.md`, feature spec files, frontmatter, filenames, or the coverage map.
+42. Return:
     - the saved feature-spec directory path
     - the `PROGRESS.md` path
     - the feature spec file list
     - the full contents of `PROGRESS.md` and each feature spec file
     - brief sequencing notes or key risks only when useful
-38. Offer the next step as a single copy-pasteable command using the exact `PROGRESS.md` path just written: `/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md`
+43. Offer the next step as a single copy-pasteable command using the exact `PROGRESS.md` path just written: `/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md`
 
 ## Question Output
 
@@ -242,6 +247,7 @@ Every feature spec must have all sections. Use `Not applicable` only for `## API
 - Do not emit legacy orchestration fields from older pspec formats
 - Completeness takes priority over brevity
 - Do not write the feature-spec directory before the question phase is complete
+- Do not return a partial feature-spec directory after the question phase is complete unless this prompt explicitly tells you to ask a follow-up question and wait
 - Do not finish planning until `PROGRESS.md`, feature spec files, and `## Coverage Map` all agree
 
 ## Output

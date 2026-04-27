@@ -65,6 +65,9 @@ Use `/pspec.spec` to draft a PRD.
 - Questions should include prefilled options and always allow a custom answer.
 - It stops after asking questions and waits for your answers.
 - After you answer, the agent runs a checklist review for contradictions, missing edge cases, and unclear verification expectations before drafting.
+- Once the answers are sufficient, it finishes the full PRD drafting run in one pass.
+- It does not hand back a partial PRD, outline, todo list, checkpoint, or next-steps handoff when it can still complete the draft itself.
+- It only pauses again for one short follow-up question when required product input is still missing.
 - The resulting PRD is written to `.pspec/specs/<epoch-ms>-<slug>.md`.
 
 The PRD should cover:
@@ -93,6 +96,9 @@ Use `/pspec.plan` on a PRD.
 - It asks **5-10 focused planning questions** when execution details are unclear.
 - It stops after asking questions and waits for your answers.
 - It performs a checklist review before writing the plan so the task set covers the base flow, edge cases, and verification needs.
+- Once the answers are sufficient, it finishes the full planning run in one pass.
+- It does not hand back a partial directory, draft files, todo list, checkpoint, or next-steps handoff when it can still complete the plan itself.
+- Before returning, it audits `PROGRESS.md`, the feature spec files, and the coverage map for parity.
 - It writes a feature-spec directory at `.pspec/tasks/<epoch-ms>-<slug>/`.
 
 Each feature-spec directory contains:
@@ -272,6 +278,12 @@ Use `/pspec.implement` with the feature-spec directory or `PROGRESS.md` path.
 - It audits that `PROGRESS.md` and the real feature spec files match before starting work.
 - It executes feature specs in order, respecting dependencies.
 - It processes one feature spec file at a time.
+- It keeps running the full implementation loop until every runnable feature spec is complete or the run is explicitly blocked.
+- It does not hand back a mid-run todo list, checkpoint, or next-steps handoff when it can still make progress itself.
+- `done` means the final closeout audit passed and no `[ ]` or `[~]` remains.
+- `partial` means the current run completed at least one additional feature spec before an explicit blocker stopped it.
+- `blocked` means the current run could not complete any additional feature spec because an explicit blocker stopped it.
+- It must not use `partial` or `blocked` for a voluntary mid-run handoff.
 - `TRIVIAL` tasks require 1 full review pass.
 - `CRITICAL` tasks require 2 full review passes.
 - Before marking a feature spec complete, the agent must run the listed verification steps and complete the required review passes.
@@ -293,6 +305,7 @@ Truthfulness rules:
 - if a required verification step cannot run because of an external dependency or environment issue, the feature spec should be marked blocked
 - it should not mark a feature spec complete until every planned file, verification artifact, API/UI contract, and definition-of-done bullet is accounted for
 - it must not return `done` while any `[ ]` or `[~]` remains in `PROGRESS.md`
+- it must not use `partial` or `blocked` for a voluntary mid-run handoff
 
 ### Step 6: Debugging
 
@@ -370,10 +383,10 @@ your-project/
 
 pspec now favors serial, complete execution over orchestration features.
 
-1. `/pspec.spec` asks focused questions, collects answers, and writes a PRD.
-2. `/pspec.plan` asks focused questions first, then writes a feature-spec directory with `PROGRESS.md`, one file per feature, and a coverage map for every `AC-*` and `EC-*` requirement.
+1. `/pspec.spec` asks focused questions, collects answers, then completes the PRD draft in one pass once the answers are sufficient.
+2. `/pspec.plan` asks focused questions first, then completes the feature-spec directory in one pass with `PROGRESS.md`, one file per feature, and a coverage map for every `AC-*` and `EC-*` requirement.
 3. `/pspec.audit` audits and syncs the feature-spec directory against the PRD without changing product code.
-4. `/pspec.implement` reads `PROGRESS.md`, audits the feature-spec registry and coverage map, executes one feature spec file at a time, verifies the base case and edge cases, runs unit tests and the end-to-end artifact, checks API/UI contract fidelity, checks every definition-of-done bullet, and only then marks completion.
+4. `/pspec.implement` reads `PROGRESS.md`, audits the feature-spec registry and coverage map, executes one feature spec file at a time, verifies the base case and edge cases, runs unit tests and the end-to-end artifact, checks API/UI contract fidelity, checks every definition-of-done bullet, keeps going until every runnable feature spec is complete or the run is explicitly blocked, and only then marks completion.
 5. `/pspec.debug` works through likely causes serially and keeps active task directories in sync.
 
 This keeps the workflow explicit and reviewable without adding orchestration-specific structures to your project.
