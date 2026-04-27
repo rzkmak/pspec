@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
-import { getTemplates, getSubagentRoleTemplates, SUBAGENT_ROLE_NAMES } from '../templates';
+import { getTemplates } from '../templates';
 // Use require for enquirer to avoid commonjs/esm interop issues with its types
 const { prompt } = require('enquirer');
 
@@ -51,11 +51,8 @@ export async function initCommand() {
     return;
   }
 
-  // Create directories if they don't exist
-  if (!fs.existsSync(pspecDir)) {
-    fs.mkdirSync(path.join(pspecDir, 'specs'), { recursive: true });
-    fs.mkdirSync(path.join(pspecDir, 'tasks'), { recursive: true });
-  }
+  fs.mkdirSync(path.join(pspecDir, 'specs'), { recursive: true });
+  fs.mkdirSync(path.join(pspecDir, 'tasks'), { recursive: true });
 
   // Create CONTEXT.md stub if it doesn't exist
   const contextPath = path.join(pspecDir, 'CONTEXT.md');
@@ -89,40 +86,6 @@ export async function initCommand() {
       }
     }
   }
-
-  // Sync subagent role files to .pspec/subagent-roles/
-  const roleTemplates = getSubagentRoleTemplates();
-  const subagentRolesDir = path.join(process.cwd(), '.pspec/subagent-roles');
-  fs.mkdirSync(subagentRolesDir, { recursive: true });
-
-  // Write/update role files and track changes
-  // Note: We don't delete stale files to avoid accidentally removing custom user roles.
-  // Users can manually delete old pspec roles if needed.
-  let addedCount = 0;
-  let updatedCount = 0;
-  for (const template of roleTemplates) {
-    const filePath = path.join(subagentRolesDir, template.file);
-    const existed = fs.existsSync(filePath);
-    if (existed) {
-      // Check if content actually changed
-      const existingContent = fs.readFileSync(filePath, 'utf-8');
-      if (existingContent !== template.content) {
-        fs.writeFileSync(filePath, template.content);
-        updatedCount++;
-      }
-      // If content matches, don't count as updated (no-op)
-    } else {
-      fs.writeFileSync(filePath, template.content);
-      addedCount++;
-    }
-  }
-
-  // Log summary
-  const parts = [];
-  if (addedCount > 0) parts.push(`${addedCount} added`);
-  if (updatedCount > 0) parts.push(`${updatedCount} updated`);
-  const summary = parts.length > 0 ? parts.join(', ') : 'no changes';
-  console.log(chalk.green(`Synced subagent roles (${summary})`));
 
   console.log(chalk.green('pspec initialized/updated successfully!'));
 }

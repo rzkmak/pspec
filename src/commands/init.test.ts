@@ -29,39 +29,36 @@ describe('initCommand', () => {
   });
 
   const providers = [
-    { agent: 'claude', expectedFiles: ['.claude/commands/pspec.commit-current-branch.md', '.claude/commands/pspec.commit-raise-pr.md', '.claude/commands/pspec.spec.md', '.claude/commands/pspec.plan.md', '.claude/commands/pspec.implement.md', '.claude/commands/pspec.debug.md'] },
-    { agent: 'gemini', expectedFiles: ['.gemini/commands/pspec.commit-current-branch.toml', '.gemini/commands/pspec.commit-raise-pr.toml', '.gemini/commands/pspec.spec.toml', '.gemini/commands/pspec.plan.toml', '.gemini/commands/pspec.implement.toml', '.gemini/commands/pspec.debug.toml'] },
+    { agent: 'claude', expectedFiles: ['.claude/commands/pspec.spec.md', '.claude/commands/pspec.plan.md', '.claude/commands/pspec.audit.md', '.claude/commands/pspec.implement.md', '.claude/commands/pspec.debug.md'] },
+    { agent: 'gemini', expectedFiles: ['.gemini/commands/pspec.spec.toml', '.gemini/commands/pspec.plan.toml', '.gemini/commands/pspec.audit.toml', '.gemini/commands/pspec.implement.toml', '.gemini/commands/pspec.debug.toml'] },
     {
       agent: 'cursor',
       expectedFiles: [
-        '.cursor/rules/pspec.commit-current-branch.mdc',
-        '.cursor/rules/pspec.commit-raise-pr.mdc',
         '.cursor/rules/pspec.spec.mdc',
         '.cursor/rules/pspec.plan.mdc',
+        '.cursor/rules/pspec.audit.mdc',
         '.cursor/rules/pspec.implement.mdc',
         '.cursor/rules/pspec.debug.mdc',
-        '.cursor/commands/pspec.commit-current-branch.md',
-        '.cursor/commands/pspec.commit-raise-pr.md',
         '.cursor/commands/pspec.spec.md',
         '.cursor/commands/pspec.plan.md',
+        '.cursor/commands/pspec.audit.md',
         '.cursor/commands/pspec.implement.md',
         '.cursor/commands/pspec.debug.md'
       ]
     },
-    { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.commit-current-branch.md', '.opencode/commands/pspec.commit-raise-pr.md', '.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] },
+    { agent: 'opencode', expectedFiles: ['.opencode/commands/pspec.spec.md', '.opencode/commands/pspec.plan.md', '.opencode/commands/pspec.audit.md', '.opencode/commands/pspec.implement.md', '.opencode/commands/pspec.debug.md'] },
     {
       agent: 'antigravity',
       expectedFiles: [
-        '.agent/workflows/pspec.commit-current-branch.md',
-        '.agent/workflows/pspec.commit-raise-pr.md',
         '.agent/workflows/pspec.spec.md',
         '.agent/workflows/pspec.plan.md',
+        '.agent/workflows/pspec.audit.md',
         '.agent/workflows/pspec.implement.md',
         '.agent/workflows/pspec.debug.md',
         '.agent/skills/pspec/SKILL.md'
       ]
     },
-    { agent: 'kilo', expectedFiles: ['.kilo/commands/pspec.commit-current-branch.md', '.kilo/commands/pspec.commit-raise-pr.md', '.kilo/commands/pspec.spec.md', '.kilo/commands/pspec.plan.md', '.kilo/commands/pspec.implement.md', '.kilo/commands/pspec.debug.md'] }
+    { agent: 'kilo', expectedFiles: ['.kilo/commands/pspec.spec.md', '.kilo/commands/pspec.plan.md', '.kilo/commands/pspec.audit.md', '.kilo/commands/pspec.implement.md', '.kilo/commands/pspec.debug.md'] }
   ];
 
   providers.forEach(({ agent, expectedFiles }) => {
@@ -190,119 +187,37 @@ describe('initCommand', () => {
     expect(fs.existsSync(path.join(tmpDir, '.pspec'))).toBe(false);
   });
 
-  describe('subagent role renewal', () => {
-    it('should create subagent role files on first init', async () => {
+  describe('project scaffolding', () => {
+    it('should create CONTEXT.md on first init', async () => {
       mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      jest.spyOn(console, 'log').mockImplementation();
 
       await initCommand();
 
-      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
-      expect(fs.existsSync(subagentDir)).toBe(true);
-      expect(fs.existsSync(path.join(subagentDir, '_base.md'))).toBe(true);
-      expect(fs.existsSync(path.join(subagentDir, 'typescript-engineer.md'))).toBe(true);
-      expect(fs.existsSync(path.join(subagentDir, 'investigator.md'))).toBe(true);
-
-      // Check for sync summary in console output
-      const syncLog = consoleSpy.mock.calls.find(call =>
-        call[0].includes('Synced subagent roles')
-      );
-      expect(syncLog).toBeDefined();
-      expect(syncLog![0]).toMatch(/Synced subagent roles \(\d+ added\)/);
+      const contextPath = path.join(tmpDir, '.pspec/CONTEXT.md');
+      expect(fs.existsSync(contextPath)).toBe(true);
+      expect(fs.readFileSync(contextPath, 'utf-8')).toContain('# Project Context');
     });
 
-    it('should update existing role files and report changes', async () => {
-      // First init to create roles
+    it('should not create subagent role files', async () => {
       mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      jest.spyOn(console, 'log').mockImplementation();
+
       await initCommand();
 
-      // Modify one role file to simulate old content
-      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
-      fs.writeFileSync(path.join(subagentDir, '_base.md'), 'OLD CONTENT');
-
-      // Reset console spy for second init
-      consoleSpy.mockClear();
-
-      // Second init should update the file
-      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      await initCommand();
-
-      // Verify file was updated
-      const baseContent = fs.readFileSync(path.join(subagentDir, '_base.md'), 'utf-8');
-      expect(baseContent).not.toBe('OLD CONTENT');
-      expect(baseContent).toContain('Subagent');
-
-      // Check for updated summary
-      const syncLog = consoleSpy.mock.calls.find(call =>
-        call[0].includes('Synced subagent roles')
-      );
-      expect(syncLog).toBeDefined();
-      expect(syncLog![0]).toMatch(/Synced subagent roles \(\d+ updated\)/);
+      expect(fs.existsSync(path.join(tmpDir, '.pspec/subagent-roles'))).toBe(false);
     });
 
-    it('should preserve custom user roles not in SUBAGENT_ROLE_NAMES', async () => {
-      // First init to create roles
-      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      await initCommand();
-
-      // Add a custom user role
-      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
-      fs.writeFileSync(path.join(subagentDir, 'my-custom-role.md'), 'Custom role content');
-
-      // Reset console spy for second init
-      consoleSpy.mockClear();
-
-      // Second init should preserve the custom role (we don't auto-delete)
-      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      await initCommand();
-
-      // Verify custom role still exists
-      expect(fs.existsSync(path.join(subagentDir, 'my-custom-role.md'))).toBe(true);
-      const customContent = fs.readFileSync(path.join(subagentDir, 'my-custom-role.md'), 'utf-8');
-      expect(customContent).toBe('Custom role content');
-    });
-
-    it('should handle empty subagent-roles directory', async () => {
-      // Create .pspec but no subagent-roles
+    it('should ensure specs and tasks directories exist even when .pspec already exists', async () => {
       fs.mkdirSync(path.join(tmpDir, '.pspec'));
-      fs.mkdirSync(path.join(tmpDir, '.pspec/specs'));
-      fs.mkdirSync(path.join(tmpDir, '.pspec/tasks'));
 
       mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      jest.spyOn(console, 'log').mockImplementation();
 
       await initCommand();
 
-      const subagentDir = path.join(tmpDir, '.pspec/subagent-roles');
-      expect(fs.existsSync(subagentDir)).toBe(true);
-      expect(fs.readdirSync(subagentDir).filter(f => f.endsWith('.md')).length).toBeGreaterThan(0);
-
-      const syncLog = consoleSpy.mock.calls.find(call =>
-        call[0].includes('Synced subagent roles')
-      );
-      expect(syncLog![0]).toMatch(/Synced subagent roles \(\d+ added\)/);
-    });
-
-    it('should report no changes when roles are already in sync', async () => {
-      // First init to create roles
-      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      await initCommand();
-
-      // Reset console spy for second init
-      consoleSpy.mockClear();
-
-      // Second init immediately after first (files already match)
-      mockPrompt.mockResolvedValueOnce({ agents: ['claude'] });
-      await initCommand();
-
-      // Check for "no changes" summary
-      const syncLog = consoleSpy.mock.calls.find(call =>
-        call[0].includes('Synced subagent roles')
-      );
-      expect(syncLog![0]).toContain('Synced subagent roles (no changes)');
+      expect(fs.existsSync(path.join(tmpDir, '.pspec/specs'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.pspec/tasks'))).toBe(true);
     });
   });
 });

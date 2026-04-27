@@ -10,22 +10,22 @@
 
 > **A minimalist Spec-Driven Development (SDD) toolkit for solo developers and AI agents.**
 
-`pspec` (picospec) is a lightweight alternative to heavy SDD frameworks. It is the smallest specification workflow for a solo developer. It removes the "enterprise theater" (branch-per-feature, complex state files, and heavy daemon processes) and focuses strictly on **intent** (the Spec) and **execution** (the Tasks) using simple Markdown files.
+`pspec` (picospec) is a lightweight alternative to heavy SDD frameworks. It focuses on clear intent, executable task breakdowns, explicit verification, and a finish line that includes tests and real-flow validation.
 
-It is designed to work seamlessly alongside your favorite AI coding agents: Claude Code, Gemini CLI, Cursor, OpenCode, Antigravity, and Kilo Code.
+It is designed to work alongside Claude Code, Gemini CLI, Cursor, OpenCode, Antigravity, and Kilo Code.
 
 ## Philosophy
-- **Token Efficient:** Uses a single spec `*.md` and task `*.tasks.md` file for context instead of massive chat histories.
-- **Visual-First:** Encourages Mermaid.js diagrams over long, confusing paragraphs.
-- **Data Dictionaries:** Uses simple Markdown tables for data modeling instead of strict, unreadable JSON schemas.
-- **Direct Execution:** The AI implements tasks directly following embedded constraints and patterns, without complex orchestration layers.
-- **Parallel Subagents:** Token-efficient parallel execution with role-specific system prompts — spawn subagents only when beneficial, inline simple tasks.
+- **Context First:** Specs and task directories carry the working context instead of relying on fragile chat history.
+- **Review Driven:** Tasks are not done when code compiles; they are done after verification and self-review.
+- **Edge-Case Aware:** `/pspec.spec` and `/pspec.plan` must cover failure modes, not only happy paths.
+- **Real Verification:** Definition of done includes functional completion, unit coverage, edge-case coverage, and an end-to-end verification artifact.
+- **Simple Structure:** Use plain Markdown files and directories that are easy to inspect, edit, and review.
 
 ---
 
 ## Installation
 
-We recommend running `pspec` directly via `npx` so you always get the freshest, most up-to-date prompts for your AI agents when initializing a new project.
+Run `pspec` directly with `npx` so your generated agent commands always use the latest prompts.
 
 ```bash
 npx pspec@latest
@@ -35,346 +35,351 @@ npx pspec@latest
 
 ## How to Use
 
-The workflow follows a simple three-step loop: **Initialize -> Plan -> Implement**.
+The workflow is: **Initialize -> Spec -> Plan -> Audit -> Implement**.
 
 ### Step 1: Initialize the Project
-Run this command in the root of your project:
+
+Run this in your project root:
+
 ```bash
 npx pspec@latest
 ```
-- It will prompt you for your preferred AI agent (Claude, Gemini, Cursor, etc.).
-- It will create the `.pspec/specs/` and `.pspec/tasks/` directories.
-- It will write subagent role files to `.pspec/subagent-roles/` for parallel task execution.
-- It will automatically inject custom commands into your project (e.g., `.gemini/commands/pspec.plan.toml` or `.cursor/rules/pspec.implement.mdc`) so your AI agent natively understands the framework and provides autocomplete commands like `/pspec.spec`.
-- **Note:** If you already have `.pspec` in your project, running this command will **update** your local AI instructions to the latest version without overwriting your specs or tasks.
 
-*(Note: After running `init`, you may need to restart your AI agent session so it can detect the new slash commands).*
+- It prompts for the AI agents you want to configure.
+- It creates `.pspec/specs/`, `.pspec/tasks/`, and `.pspec/CONTEXT.md`.
+- It writes the agent-specific slash command files such as `.opencode/commands/pspec.plan.md` or `.cursor/rules/pspec.implement.mdc`.
+- Running it again updates the generated instructions without overwriting your specs or task directories.
 
-### Step 2: The Inquiry (Creating a Spec)
-Use the native slash command in your AI agent to start drafting a specification.
+You may need to restart your AI agent session after init so it detects the new slash commands.
 
-**Command:**
+### Step 2: Create a Spec
+
+Use `/pspec.spec` to draft a PRD.
+
 ```text
-/pspec.spec Let's create a spec for a new authentication feature.
+/pspec.spec Add session-based authentication for the admin dashboard
 ```
-- **Context Gathering:** The AI will automatically look at your existing codebase to understand your current architecture before answering.
-- **The Inquiry:** It will not guess. Instead, it will ask you multiple-choice questions to define the core logic, edge cases, and data models.
-  
-  *Example Interaction:*
-  > **AI:** Q1: How should we handle session storage?
-  > Option A: JWT in HTTP-only cookies (Pros: Secure against XSS. Cons: Harder to invalidate).
-  > Option B: Redis-backed sessions (Pros: Easy to revoke. Cons: Requires setting up Redis).
-  > Option C: (Custom, please type your answer)
-  >
-  > **You:** Q1: A
-  
-- **Approval Checkpoint 1:** After you answer, the AI will ask: *"Are you ready for me to draft the specification based on these answers? (Please reply 'Approved' or 'LGTM')"*
-- **Drafting:** Once approved, it will generate a highly structured `.pspec/specs/1742451234567-auth.md` file featuring a Mermaid diagram and an Acceptance Criteria checklist.
-- **Approval Checkpoint 2:** It will output the file path for your review and wait for you to say **"Approved"** or **"LGTM"** again before automatically offering the next command.
-- **Next Command Hint:** It should also give you a copy-pasteable follow-up command like `/pspec.plan 1742451234567-auth` so you do not need to retype the generated stem manually.
 
-### Step 3: Scaffold the Plan
-Once you are happy with the spec, use the planning command to break it down.
+- The agent reads project context first, including `.pspec/CONTEXT.md` when present.
+- It asks **5-10 focused questions** before drafting.
+- Questions should include prefilled options and always allow a custom answer.
+- It stops after asking questions and waits for your answers.
+- After you answer, the agent runs a checklist review for contradictions, missing edge cases, and unclear verification expectations before drafting.
+- The resulting PRD is written to `.pspec/specs/<epoch-ms>-<slug>.md`.
 
-**Command:**
+The PRD should cover:
+- product goal and context
+- user problem and success outcome
+- base flow
+- edge cases and failure modes
+- interfaces, contracts, or data shape
+- constraints and dependencies
+- acceptance criteria
+- definition of done expectations
+
+The final PRD should use stable IDs:
+- `AC-01`, `AC-02`, ... for acceptance criteria
+- `EC-01`, `EC-02`, ... for edge cases and failure modes
+
+### Step 3: Create a Feature Spec Directory
+
+Use `/pspec.plan` on a PRD.
+
 ```text
-/pspec.plan 1742451234567-auth
+/pspec.plan .pspec/specs/1742451234567-auth.md
 ```
-- If you don't provide a spec name, the AI will choose the most relevant recent spec.
-- **Sequencing:** The AI reads the spec and produces a strictly sequenced task file at `.pspec/tasks/1742451234567-auth.tasks.md`, following the order: setup → core logic → integration → validation → tests.
-- **Parallelization:** The planner automatically marks tasks as `parallelizable: true` when work spans multiple independent modules with no data dependencies. It infers appropriate roles (e.g., `security-analyst`, `typescript-engineer`) from file patterns and context keywords.
-- **Naming:** Spec files use the format `<epoch-ms>-<slug>.md`, and task files reuse the same stem as `<epoch-ms>-<slug>.tasks.md`.
-- **Next Command Hint:** After writing the task file, it suggests a ready-to-run follow-up like `/pspec.implement 1742451234567-auth`.
-- It will show you the exact file path so you can review the generated tasks and ask for your approval before proceeding.
 
-**Task file format:**
+- The agent reads the spec, relevant project conventions, and supporting reference files.
+- It asks **5-10 focused planning questions** when execution details are unclear.
+- It stops after asking questions and waits for your answers.
+- It performs a checklist review before writing the plan so the task set covers the base flow, edge cases, and verification needs.
+- It writes a feature-spec directory at `.pspec/tasks/<epoch-ms>-<slug>/`.
 
-Task files are hybrid Markdown + YAML documents. A YAML frontmatter block provides shared context for the whole file (key files, commands, conventions). Each task is a YAML code block under its own heading:
+Each feature-spec directory contains:
+- `PROGRESS.md` as the completion tracker and shared context file
+- one Markdown file per feature spec, such as `01-create-auth-types.md`
 
-```yaml
+Feature specs are outcome-based, not file-based. One feature spec can cover multiple production files, tests, scripts, and config changes when they belong to one coherent unit of work.
+The planner must also include a coverage map so every `AC-*` and `EC-*` from the PRD is assigned to one or more feature specs.
+
+Each feature spec should define these guardrail sections up front:
+- Data model involved
+- For API work: all endpoints with request and response shapes
+- For web work: all UI states, all user interactions and outcomes, and `data-testid` values to use in both code and tests
+
+### Feature Spec Directory Format
+
+`PROGRESS.md` carries shared context and task status:
+
+```md
 ---
 spec: .pspec/specs/1742451234567-auth.md
 stem: 1742451234567-auth
-created: 2024-01-17T14:30:00Z
-subagent:
-  max_concurrent: 4
-  max_retries: 1
-  on_final_failure: partial
-  token_budget: 50000
+created: 2026-04-27T10:00:00Z
 context:
   key_files:
     - src/auth/
-    - src/types/
+    - src/api/
   patterns:
-    - "Follow handler pattern in src/users/handlers.ts"
+    - Follow request handler structure from src/users/routes.ts
   commands:
-    test: "npm test"
-    lint: "npm run lint"
-    build: "npm run build"
+    test: npm test
+    lint: npm run lint
+    build: npm run build
   conventions:
-    naming: "camelCase functions, PascalCase types"
-    exports: "Named exports only"
+    naming: camelCase functions, PascalCase types
+    exports: named exports only
 ---
+
+# Progress
+
+## Coverage Map
+- `AC-01` -> `01-model-and-service.md`
+- `EC-01` -> `01-model-and-service.md`, `02-http-endpoints.md`
+
+## Feature Specs
+- [ ] `01-model-and-service.md` - Add auth domain model and service flow
+- [ ] `02-http-endpoints.md` - Add login and logout endpoints
+- [ ] `03-web-verification.md` - Add UI states, test IDs, and end-to-end verification
+
+## Notes
+- Complete tasks in numeric order unless a dependency note says otherwise.
+- A task is done only when its definition of done passes.
 ```
 
-```yaml
-## Task 1
+Each feature spec file contains its own frontmatter and execution details:
+
+```md
+---
 id: 1
-title: Create User type definition
-tag: TRIVIAL
-spec_ref: "Section 2.1: Data Model"
-depends_on: []
-files:
-  create:
-    - path: src/types/user.ts
-      description: "User interface and auth-related types"
-    - path: src/types/user.test.ts
-      description: "Type-level tests for User definitions"
-  modify: []
-  reference:
-    - path: src/types/post.ts
-      reason: "Follow existing type definition pattern"
-approach: |
-  1. Create src/types/user.ts
-  2. Define User interface with id, email, passwordHash, createdAt
-  3. Define UserCreateInput omitting id and createdAt
-  4. Define UserResponse omitting passwordHash
-  5. Export all types as named exports
-inputs: null
-outputs: null
-verify:
-  command: "npm run build"
-  expected: "Build succeeds with no type errors"
-done_when:
-  - "User, UserCreateInput, UserResponse exported from src/types/user.ts"
-  - "Build passes"
-```
-
-**Parallelizable task with subtasks:**
-
-```yaml
-## Task 3
-id: 3
-title: Audit security vulnerabilities
+title: Add auth domain model and service flow
 tag: CRITICAL
-spec_ref: "Section 4.2: Security"
+spec_ref:
+  - "AC-03"
+  - "EC-02"
 depends_on: []
-parallelizable: true
-subtasks:
-  - id: 3.1
-    title: Audit authentication module
-    roles: [security-analyst, typescript-engineer]
-    scope:
-      files:
-        - src/auth/**/*.ts
-      keywords: []
-    approach: |
-      1. Review login flow for injection vulnerabilities
-      2. Check password hashing implementation
-    result: null
-  - id: 3.2
-    title: Audit API endpoints
-    roles: [security-analyst]
-    scope:
-      files:
-        - src/api/**/*.ts
-      keywords: []
-    approach: |
-      1. Check CSRF protection on POST endpoints
-      2. Verify rate limiting
-    result: null
-aggregate_result: null
-verify:
-  command: "npm run security-audit"
-  expected: "No new CRITICAL or HIGH vulnerabilities"
-done_when:
-  - "All CRITICAL/HIGH issues documented"
+---
+
+# Goal
+Deliver the core login/logout domain logic and shared auth types.
+
+## Requirement Coverage
+- `AC-03` - Adds the core auth flow behavior
+- `EC-02` - Covers invalid credentials and locked-account behavior
+
+## Files
+### Create
+- `src/auth/service.ts` - Core authentication service
+- `src/auth/service.test.ts` - Unit coverage for the service
+
+### Modify
+- `src/auth/types.ts` - Shared auth contracts
+
+### Reference
+- `src/users/service.ts` - Existing service structure
+
+## Data Model
+- `AuthSession` with session id, user id, created at, expires at
+- `LoginInput` with email and password
+
+## API Contracts
+- Endpoint: `POST /api/auth/login`
+  - Request: `{ email: string, password: string }`
+  - Response: `{ user: { id: string, email: string }, sessionId: string }`
+
+## UI States
+- Not applicable
+
+## User Interactions
+- Not applicable
+
+## Data Test IDs
+- Not applicable
+
+## Edge Cases
+- Invalid password
+- Unknown email
+- Locked account
+- Session store failure
+
+## Approach
+1. Add the auth service and shared types.
+2. Implement success and failure paths.
+3. Add unit tests for the base case and listed edge cases.
+4. Hook the service into the verification artifact if needed.
+
+## Verification
+- Base case:
+  - Command: `npm test -- auth/service.test.ts`
+  - Expected: successful login path passes
+- Unit tests:
+  - Command: `npm test -- auth/service.test.ts`
+  - Expected: base and failure-path assertions pass
+- Edge cases:
+  - Command: `npm test -- auth/service.test.ts`
+  - Expected: invalid credentials, locked account, and store failure cases pass
+- E2E:
+  - Type: `api-script`
+  - Path: `scripts/verify-auth-flow.sh`
+  - Command: `bash scripts/verify-auth-flow.sh`
+  - Expected: login and logout flow succeeds against the running app
+
+## Definition Of Done
+- Functional behavior is finished.
+- Unit tests cover the base case and listed edge cases.
+- Failure modes are implemented and verified.
+- The end-to-end verification artifact runs successfully.
 ```
 
-Every task includes an `approach` (numbered steps), `files.reference` (patterns to follow), `verify` (exact command and expected outcome), and `done_when` (checkable acceptance criteria). Test files are always included for every new file and every new function or method introduced.
+### Definition Of Done
 
-### Step 4: Implement and Execute
-Once the task file is generated, hand the wheel over to the AI to implement the tasks.
+Every task must define and satisfy all of the following:
+- functional behavior is finished
+- unit tests are added or updated
+- edge cases are implemented and verified
+- an end-to-end verification artifact is provided
 
-**Command:**
+End-to-end verification artifact rules:
+- API work: provide an API call verification script
+- Web work: provide a Playwright script
+- Other work: provide the smallest runnable artifact that verifies the real flow
+
+### Step 4: Audit And Sync The Plan
+
+Use `/pspec.audit` when the PRD changed after planning, when feature spec files drift from `PROGRESS.md`, or before implementation to confirm the plan is still aligned.
+
 ```text
-/pspec.implement 1742451234567-auth
+/pspec.audit .pspec/tasks/1742451234567-auth/PROGRESS.md
 ```
-- If you don't provide a spec name, the AI will use the most recently updated matching task file.
-- **Context-First:** The AI parses the YAML frontmatter to get key files, conventions, and commands — no redundant codebase exploration.
-- **Sequential Execution:** Tasks run in `id` order, respecting `depends_on`. `CRITICAL` tasks run one at a time with full verification. Adjacent `TRIVIAL` tasks with the same dependencies are batched.
-- **Parallel Subagent Execution:** For tasks marked `parallelizable: true`, the AI spawns subagents with role-specific system prompts:
-  - Token budget check: auto-reduces parallelism if estimated tokens exceed budget
-  - Role-based prompt composition: base prompt + role-specific files from `.pspec/subagent-roles/`
-  - Max concurrency and retry handling per `subagent` config in frontmatter
-  - Condensed YAML summaries returned from each subagent, aggregated into `aggregate_result`
-- **Test Coverage:** For every new file and every new function or method, the AI creates or updates the corresponding test file.
-- **Empirical Verification:** The AI runs the exact `verify.command` from the task, checks every item in `done_when`, and only marks a task `[x]` when all criteria pass.
-- It reports a compact result (status, files changed, verification outcome) when all tasks are complete.
 
-### Step 5: Debugging and Maintenance
-If you encounter bugs, compile errors, or failing tests (whether during implementation or in normal development), use the debug command.
+- The agent reads `PROGRESS.md` and the linked PRD.
+- It audits the feature-spec registry, coverage map, and required feature-spec sections.
+- It syncs planning artifacts when the PRD changed.
+- It preserves valid completed feature specs when possible.
+- It can downgrade stale completed items back to `[ ]` when requirement coverage changed materially.
+- It does not change product code, tests, or runtime configuration. It only updates `PROGRESS.md` and feature spec files.
 
-**Command:**
+### Step 5: Implement The Feature Specs
+
+Use `/pspec.implement` with the feature-spec directory or `PROGRESS.md` path.
+
+```text
+/pspec.implement .pspec/tasks/1742451234567-auth/PROGRESS.md
+```
+
+- The agent reads `PROGRESS.md` first.
+- It reads the linked PRD and checks that every `AC-*` and `EC-*` in the coverage map is valid.
+- It audits that `PROGRESS.md` and the real feature spec files match before starting work.
+- It executes feature specs in order, respecting dependencies.
+- It processes one feature spec file at a time.
+- `TRIVIAL` tasks require 1 full review pass.
+- `CRITICAL` tasks require 2 full review passes.
+- Before marking a feature spec complete, the agent must run the listed verification steps and complete the required review passes.
+
+The self-review must check:
+- the base case still works
+- edge cases and failure modes are covered
+- no planned work was skipped
+- no unresolved `TODO`, `FIXME`, placeholder, or follow-up markers remain unless explicitly allowed
+- unit tests and end-to-end verification still match the implemented behavior
+- implemented API endpoints still match the planned request and response shapes when applicable
+- implemented UI states, interactions, and `data-testid` values still match the feature spec when applicable
+
+If review finds issues, the agent fixes them, reruns verification, and reviews again before checking the task off in `PROGRESS.md`.
+
+Truthfulness rules:
+- the agent must not claim a verification step passed unless it actually ran and succeeded
+- if a feature spec file is missing a required section, the agent should stop and report the first missing section instead of guessing
+- if a required verification step cannot run because of an external dependency or environment issue, the feature spec should be marked blocked
+- it should not mark a feature spec complete until every planned file, verification artifact, API/UI contract, and definition-of-done bullet is accounted for
+- it must not return `done` while any `[ ]` or `[~]` remains in `PROGRESS.md`
+
+### Step 6: Debugging
+
+Use `/pspec.debug` for failures or regressions.
+
 ```text
 /pspec.debug [error log or description]
 ```
-- **Direct Triage:** The AI will automatically search the codebase for the error's source and fix it directly.
-- **Repro-First:** It will create a minimal reproduction script to confirm the bug before applying a fix.
-- **Parallel Investigation:** If there are multiple potential causes, it spawns subagents per hypothesis with `debugger` + language-specific roles to find the solution faster.
-- **PSpec-Aware:** It will check if the bug is related to any active tasks or existing specs to ensure consistency.
 
-### Step 6: Commit Helpers
-If you want the agent to package current work for you, use one of the git helper commands.
-
-**Commands:**
-```text
-/pspec.commit-raise-pr
-/pspec.commit-current-branch
-```
-- `/pspec.commit-raise-pr` creates a new inferred branch name, stages all safe files, commits them, pushes that branch, and opens a PR against the repository default branch with `gh`.
-- `/pspec.commit-current-branch` stays on the current branch, stages all safe files, commits them, and pushes to that branch.
-- Both commands infer the commit message from the staged diff after staging and recent commit style, skip likely secret files unless explicitly requested, and use `gh` for GitHub operations.
-
+- The agent starts with direct triage.
+- It creates a minimal reproduction before changing code when possible.
+- It works serially through the most likely causes.
+ - If the bug is part of an active pspec plan, it uses the current feature-spec directory and `PROGRESS.md` to keep the fix aligned.
 
 ### Release Publishing
+
 - Add an `NPM_TOKEN` repository secret with publish access to the npm package.
 - Publishing is automated by `.github/workflows/auto-release.yml`.
-- When the version in `package.json` changes on the master branch, the workflow automatically creates a GitHub Release and publishes to npm.
-- Stable releases publish with the npm dist-tag `latest`; prerelease versions such as `1.2.3-beta.1` publish to the matching dist-tag like `beta`.
-
+- When the version in `package.json` changes on the master branch, the workflow creates a GitHub Release and publishes to npm.
+- Stable releases publish with npm dist-tag `latest`; prereleases such as `1.2.3-beta.1` publish to the matching dist-tag such as `beta`.
 
 ---
 
 ## Directory Structure
-A project using `pspec` will look like this:
 
 ```text
 your-project/
 ├── .pspec/
-│   ├── pspec.json                 # Auto-generated config
-│   ├── subagent-roles/            # Role-specific system prompts for parallel execution
-│   │   ├── _base.md               # Base subagent rules (always injected)
-│   │   ├── typescript-engineer.md
-│   │   ├── kotlin-engineer.md
-│   │   ├── test-creator.md
-│   │   ├── debugger.md
-│   │   ├── security-analyst.md
-│   │   └── investigator.md        # Lightweight, default role
+│   ├── pspec.json
+│   ├── CONTEXT.md
 │   ├── specs/
-│   │   └── 1742451234567-auth.md  # The "Intent" (Markdown/Mermaid)
+│   │   └── 1742451234567-auth.md
 │   └── tasks/
-│       └── 1742451234567-auth.tasks.md # The "Execution" (Checklists)
-├── .opencode/                     # OpenCode agent commands
+│       └── 1742451234567-auth/
+│           ├── PROGRESS.md
+│           ├── 01-model-and-service.md
+│           ├── 02-http-endpoints.md
+│           └── 03-e2e-verification.md
+├── .opencode/
 │   └── commands/
-│       ├── pspec.commit-current-branch.md
-│       ├── pspec.commit-raise-pr.md
 │       ├── pspec.spec.md
 │       ├── pspec.plan.md
+│       ├── pspec.audit.md
 │       ├── pspec.implement.md
 │       └── pspec.debug.md
-├── .gemini/                       # Gemini CLI commands
+├── .gemini/
 │   └── commands/
-│       ├── pspec.commit-current-branch.toml
-│       ├── pspec.commit-raise-pr.toml
 │       ├── pspec.spec.toml
 │       ├── pspec.plan.toml
+│       ├── pspec.audit.toml
 │       ├── pspec.implement.toml
 │       └── pspec.debug.toml
-├── .claude/                       # Claude Code commands
+├── .claude/
 │   └── commands/
-│       ├── pspec.commit-current-branch.md
-│       ├── pspec.commit-raise-pr.md
 │       ├── pspec.spec.md
 │       ├── pspec.plan.md
+│       ├── pspec.audit.md
 │       ├── pspec.implement.md
 │       └── pspec.debug.md
-├── .cursor/                       # Cursor rules and commands
+├── .cursor/
 │   ├── commands/
-│   │   ├── pspec.commit-current-branch.md
-│   │   ├── pspec.commit-raise-pr.md
-│   │   ├── pspec.spec.md
-│   │   ├── pspec.plan.md
-│   │   ├── pspec.implement.md
-│   │   └── pspec.debug.md
 │   └── rules/
-│       ├── pspec.commit-current-branch.mdc
-│       ├── pspec.commit-raise-pr.mdc
-│       ├── pspec.spec.mdc
-│       ├── pspec.plan.mdc
-│       ├── pspec.implement.mdc
-│       └── pspec.debug.mdc
-├── .agent/                       # Antigravity workflows and skills
+├── .agent/
 │   ├── workflows/
-│   │   ├── pspec.commit-current-branch.md
-│   │   ├── pspec.commit-raise-pr.md
-│   │   ├── pspec.spec.md
-│   │   ├── pspec.plan.md
-│   │   ├── pspec.implement.md
-│   │   └── pspec.debug.md
 │   └── skills/
-│       └── pspec/
-│           └── SKILL.md
-├── .kilo/                         # Kilo Code commands
+├── .kilo/
 │   └── commands/
-│       ├── pspec.commit-current-branch.md
-│       ├── pspec.commit-raise-pr.md
-│       ├── pspec.spec.md
-│       ├── pspec.plan.md
-│       ├── pspec.implement.md
-│       └── pspec.debug.md
-├── src/                           # Your actual code
+├── src/
 └── package.json
 ```
 
 ---
 
-## Subagent System (Parallel Execution)
+## Execution Model
 
-pspec includes a token-efficient parallel execution system for tasks that can be broken into independent subtasks.
+pspec now favors serial, complete execution over orchestration features.
 
-### How It Works
+1. `/pspec.spec` asks focused questions, collects answers, and writes a PRD.
+2. `/pspec.plan` asks focused questions first, then writes a feature-spec directory with `PROGRESS.md`, one file per feature, and a coverage map for every `AC-*` and `EC-*` requirement.
+3. `/pspec.audit` audits and syncs the feature-spec directory against the PRD without changing product code.
+4. `/pspec.implement` reads `PROGRESS.md`, audits the feature-spec registry and coverage map, executes one feature spec file at a time, verifies the base case and edge cases, runs unit tests and the end-to-end artifact, checks API/UI contract fidelity, checks every definition-of-done bullet, and only then marks completion.
+5. `/pspec.debug` works through likely causes serially and keeps active task directories in sync.
 
-1. **Planner** (`/pspec.plan`) detects parallelizable work and generates subtasks with `result: null` placeholders
-2. **Implementer** (`/pspec.implement`) spawns subagents for parallelizable tasks:
-   - Composes system prompt from `_base.md` + role-specific files
-   - Respects `max_concurrent` and auto-batches if token budget exceeded
-   - Collects condensed YAML summaries, handles retries, aggregates into `aggregate_result`
-3. **Debugger** (`/pspec.debug`) spawns subagents per hypothesis when root cause is unclear
-
-### Built-in Roles
-
-| Role | Best For | File Patterns |
-|------|----------|---------------|
-| `investigator` | Finding files, tracing paths | Default, lightweight |
-| `typescript-engineer` | TS implementation, types | `*.ts`, `*.tsx` |
-| `kotlin-engineer` | Kotlin implementation | `*.kt`, `*.kts` |
-| `test-creator` | Writing tests | `*.test.*`, `*.spec.*` |
-| `debugger` | Tracing failures | Error context |
-| `security-analyst` | Security audits | auth, crypto keywords |
-
-Roles can be combined: `roles: [security-analyst, typescript-engineer]` for a TypeScript security audit.
-
-> **Why roles instead of specialized agents?** Agentic tools (OpenCode, Cursor, Claude Code, etc.) automatically load all agent definitions into their command palette. Creating specialized agents for each role would clutter the UI and make the system harder to manage. Instead, pspec uses **role-specific system prompts** that are dynamically injected when spawning subagents — giving you the benefits of specialization without the UI overhead.
-
-### Subagent Output Format
-
-Every subagent returns a structured YAML summary (max 5 bullet points):
-
-```yaml
-summary:
-  - "[file:line] finding description"
-  - "OK: verified X is safe"
-files_touched:
-  - src/auth/login.ts
-verification: passed|failed|skipped
-blocked_reason: null
-```
-
-This keeps token usage minimal while giving the main agent actionable, condensed information.
+This keeps the workflow explicit and reviewable without adding orchestration-specific structures to your project.
 
 ---
 
 ## Architecture
 
-See [AGENTS.md](./AGENTS.md) for detailed architecture documentation for AI agents and contributors.
+See [AGENTS.md](./AGENTS.md) for contributor-facing architecture notes.
