@@ -1,7 +1,5 @@
 import { getTemplates, templates } from './index';
 
-const wordCount = (text: string) => text.trim().split(/\s+/).length;
-
 describe('templates', () => {
   it('should have templates for all supported agents', () => {
     const agents = ['claude', 'gemini', 'cursor', 'opencode', 'antigravity', 'kilo'];
@@ -16,17 +14,12 @@ describe('templates', () => {
     it('should be correctly formatted as markdown with frontmatter', () => {
       const claudeTemplates = getTemplates('claude');
       const specTemplate = claudeTemplates.find(t => t.file === 'pspec.spec.md');
-      const commitTemplate = claudeTemplates.find(t => t.file === 'pspec.commit-raise-pr.md');
       
       expect(specTemplate).toBeDefined();
       expect(specTemplate?.dir).toBe('.claude/commands');
       expect(specTemplate?.content).toContain('---');
-      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new spec"');
-      expect(specTemplate?.content).toContain('You are an AI Spec Architect using the pspec framework.');
-
-      expect(commitTemplate).toBeDefined();
-      expect(commitTemplate?.content).toContain('description: "Commit current work on a new branch and open a PR"');
-      expect(commitTemplate?.content).toContain('You are a Git workflow assistant using the pspec framework.');
+      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new PRD"');
+      expect(specTemplate?.content).toContain('You are an AI Product Manager using the pspec framework.');
     });
   });
 
@@ -34,16 +27,17 @@ describe('templates', () => {
     it('should be correctly formatted as toml', () => {
       const geminiTemplates = getTemplates('gemini');
       const planTemplate = geminiTemplates.find(t => t.file === 'pspec.plan.toml');
-      const currentBranchTemplate = geminiTemplates.find(t => t.file === 'pspec.commit-current-branch.toml');
+      const auditTemplate = geminiTemplates.find(t => t.file === 'pspec.audit.toml');
       
       expect(planTemplate).toBeDefined();
       expect(planTemplate?.dir).toBe('.gemini/commands');
-      expect(planTemplate?.content).toContain('description = "Plan tasks for an existing spec"');
+      expect(planTemplate?.content).toContain('description = "Generate feature specs for an existing PRD"');
       expect(planTemplate?.content).toContain('prompt = """');
       expect(planTemplate?.content).toContain('You are an AI Technical Lead using the pspec framework.');
 
-      expect(currentBranchTemplate).toBeDefined();
-      expect(currentBranchTemplate?.content).toContain('description = "Commit current work on the current branch and push"');
+      expect(auditTemplate).toBeDefined();
+      expect(auditTemplate?.content).toContain('description = "Audit and sync feature specs with the PRD"');
+      expect(auditTemplate?.content).toContain('You are an AI Planning Auditor using the pspec framework.');
     });
   });
 
@@ -52,6 +46,12 @@ describe('templates', () => {
       const cursorTemplates = getTemplates('cursor');
       const implementTemplate = cursorTemplates.find(
         t => t.dir === '.cursor/rules' && t.file === 'pspec.implement.mdc'
+      );
+      const auditTemplate = cursorTemplates.find(
+        t => t.dir === '.cursor/rules' && t.file === 'pspec.audit.mdc'
+      );
+      const auditCommandTemplate = cursorTemplates.find(
+        t => t.dir === '.cursor/commands' && t.file === 'pspec.audit.md'
       );
       const implementCommandTemplate = cursorTemplates.find(
         t => t.dir === '.cursor/commands' && t.file === 'pspec.implement.md'
@@ -64,11 +64,15 @@ describe('templates', () => {
 
       expect(implementCommandTemplate).toBeDefined();
       expect(implementCommandTemplate?.dir).toBe('.cursor/commands');
-      expect(implementCommandTemplate?.content).toContain('description: "Implement tasks from a checklist"');
+      expect(implementCommandTemplate?.content).toContain('description: "Implement planned feature specs"');
       expect(implementCommandTemplate?.content).toContain('You are a Senior Software Engineer using the pspec framework.');
 
-      expect(cursorTemplates.some(t => t.file === 'pspec.commit-raise-pr.mdc')).toBe(true);
-      expect(cursorTemplates.some(t => t.file === 'pspec.commit-current-branch.md')).toBe(true);
+      expect(auditTemplate).toBeDefined();
+      expect(auditTemplate?.content).toContain('You are an AI Planning Auditor using the pspec framework.');
+
+      expect(auditCommandTemplate).toBeDefined();
+      expect(auditCommandTemplate?.dir).toBe('.cursor/commands');
+      expect(auditCommandTemplate?.content).toContain('description: "Audit and sync feature specs with the PRD"');
     });
   });
 
@@ -76,10 +80,14 @@ describe('templates', () => {
     it('should be correctly formatted as a debugging tool', () => {
       const geminiTemplates = getTemplates('gemini');
       const debugTemplate = geminiTemplates.find(t => t.file === 'pspec.debug.toml');
+      const auditTemplate = geminiTemplates.find(t => t.file === 'pspec.audit.toml');
       
       expect(debugTemplate).toBeDefined();
       expect(debugTemplate?.content).toContain('description = "Investigate and resolve errors in the project"');
       expect(debugTemplate?.content).toContain('You are an AI Debugging Expert using the pspec framework.');
+
+      expect(auditTemplate).toBeDefined();
+      expect(auditTemplate?.content).toContain('Audit and sync feature specs with the PRD');
     });
   });
 
@@ -92,9 +100,9 @@ describe('templates', () => {
       expect(specTemplate).toBeDefined();
       expect(specTemplate?.dir).toBe('.agent/workflows');
       expect(specTemplate?.content).toContain('---');
-      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new spec"');
+      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new PRD"');
       expect(specTemplate?.content).toContain('# Pspec spec');
-      expect(specTemplate?.content).toContain('You are an AI Spec Architect using the pspec framework.');
+      expect(specTemplate?.content).toContain('You are an AI Product Manager using the pspec framework.');
 
       expect(skillTemplate).toBeDefined();
       expect(skillTemplate?.dir).toBe('.agent/skills/pspec');
@@ -112,9 +120,9 @@ describe('templates', () => {
       expect(specTemplate).toBeDefined();
       expect(specTemplate?.dir).toBe('.agent/workflows');
       expect(specTemplate?.content).toContain('---');
-      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new spec"');
+      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new PRD"');
       expect(specTemplate?.content).toContain('# Pspec spec');
-      expect(specTemplate?.content).toContain('You are an AI Spec Architect using the pspec framework.');
+      expect(specTemplate?.content).toContain('You are an AI Product Manager using the pspec framework.');
 
       expect(skillTemplate).toBeDefined();
       expect(skillTemplate?.dir).toBe('.agent/skills/pspec');
@@ -130,64 +138,53 @@ describe('templates', () => {
 
     it('should return the correct templates for a known agent', () => {
       const t = getTemplates('opencode');
-      expect(t.length).toBe(6);
-      expect(t[0].file).toBe('pspec.commit-current-branch.md');
-      expect(t[0].content).toContain('Git workflow assistant');
+      expect(t.length).toBe(5);
+      expect(t[0].file).toBe('pspec.spec.md');
+      expect(t[0].content).toContain('AI Product Manager');
     });
 
     it('should return both rule and command templates for cursor', () => {
       const t = getTemplates('cursor');
-      expect(t.length).toBe(12);
+      expect(t.length).toBe(10);
       const dirs = t.map(template => template.dir);
       expect(dirs).toContain('.cursor/rules');
       expect(dirs).toContain('.cursor/commands');
     });
 
-    it('should keep command prompts compact and direct-first', () => {
+    it('should keep command prompts workflow-aligned', () => {
       const templates = getTemplates('opencode');
       const specs = [
         {
-          file: 'pspec.commit-current-branch.md',
-          maxWords: 210,
-          required: ['Commit the current work on the current branch now.', 'Stay on the current branch.', 'Stage all safe tracked and untracked files before committing.', 'push with upstream tracking', 'Use `gh` CLI for every GitHub operation in pspec.'],
-          forbidden: ['Do you want me to', 'Commit staged files only.', 'When asked to /pspec.commit-current-branch']
-        },
-        {
-          file: 'pspec.commit-raise-pr.md',
-          maxWords: 240,
-          required: ['Package the current work into a new branch and open a PR now.', 'Use `gh` CLI for every GitHub operation in pspec', 'Create a new branch from the current HEAD before committing.', 'Infer a concise kebab-case branch name', 'Stage all safe tracked and untracked files', 'Create a PR against the detected default branch'],
-          forbidden: ['Commit staged files only.', 'ask for permission before pushing', 'When asked to /pspec.commit-raise-pr']
-        },
-        {
           file: 'pspec.spec.md',
-          required: ['Draft immediately when the request is concrete.', 'Ask 0-3 targeted questions only when ambiguity would materially change the spec.', '<epoch-ms>-<slug>.md', '/pspec.plan .pspec/specs/'],
-          forbidden: ['3 to 7', 'Approval Gate 1', 'Resource Cleanup', 'Ask for approval once']
+          required: ['Product Requirements Document (PRD)', 'You are an AI Product Manager using the pspec framework.', 'In the first response, ask questions only. Do not write the PRD in the same response.', 'Reply using Q1/Q2/...', 'AC-01', 'EC-01', 'Do not save placeholder text', '<epoch-ms>-<slug>.md', '/pspec.plan .pspec/specs/'],
+          forbidden: ['Ask 0-3 targeted questions', 'Approval Gate 1', 'Resource Cleanup', 'Draft immediately when the request is concrete.', 'not confident enough to assume']
         },
         {
           file: 'pspec.plan.md',
-          required: ['Default to one planning pass.', 'reuse its `<epoch-ms>-<slug>` stem', '/pspec.implement .pspec/tasks/', 'hybrid Markdown + YAML', 'approach', 'done_when'],
-          forbidden: ['Spawn a `test_planner` agent', 'Resource Cleanup', 'Ask for approval only once']
+          required: ['generate a feature-spec directory', 'Do not write the feature-spec directory in the same response where you ask questions.', '## Feature Specs', '## Coverage Map', '## Data Model', '## API Contracts', '## UI States', '## User Interactions', '## Data Test IDs', 'request and response shapes', 'loading, empty, error, and success states', 'data-testid', '/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md'],
+          forbidden: ['parallelizable', 'subtasks', 'aggregate_result', 'token_budget', 'Ask for approval only once', 'not confident enough to assume', 'files.create']
+        },
+        {
+          file: 'pspec.audit.md',
+          required: ['audit and sync a feature-spec directory against its PRD', 'This command may update planning artifacts, but it must not implement product code.', '## Phase 3 - Sync Plan Artifacts', 'keep valid feature spec files when they still cover the right requirements', 'downgrade it to `[ ]` and add a short note in `PROGRESS.md`', 'Do not change application source code, tests, or runtime configuration.', 'Never claim the directory is clean if coverage, schema, or placeholder issues remain'],
+          forbidden: ['parallelizable', 'subagent', 'token_budget']
         },
         {
           file: 'pspec.implement.md',
-          required: ['Parse the YAML frontmatter', 'Execute tasks in strict `id` order', 'batch adjacent TRIVIAL tasks', 'execute one at a time', 'Do not advance to the next task'],
-          forbidden: ['DO NOT read the task file details yourself', 'Run `build`, `test`, and `lint` for every task', 'log it and proceed to the next task']
+          required: ['treat the task directory as a feature-spec directory', '## Feature Specs', '## Requirement Coverage', '## Data Model', '## API Contracts', '## UI States', '## User Interactions', '## Data Test IDs', 'implemented API endpoints still match the planned request/response shapes', 'implemented UI states, interactions, and `data-testid` values still match the feature spec', 'Check every bullet in `## Definition Of Done` one by one.', 'Do not return `done` while any `[ ]` or `[~]` remains.'],
+          forbidden: ['parallelizable', 'subagent', 'token_budget', 'log it and proceed to the next task', 'confidence is low']
         },
         {
           file: 'pspec.debug.md',
-          maxWords: 320,
-          required: ['Start with direct triage.', 'Use parallel investigation only for distinct hypotheses'],
-          forbidden: ['grep_search', 'Resource Cleanup']
+          required: ['## Phase 1 - Reproduce', 'Do not use parallel investigation or subagents.', 'If you cannot reproduce the bug, say so plainly and report what you tried.', 'Never claim the bug is fixed unless the reproduction or a relevant regression check passes.'],
+          forbidden: ['grep_search', 'Resource Cleanup', 'spawn one subagent per hypothesis']
         }
       ];
 
-      specs.forEach(({ file, maxWords, required, forbidden }: { file: string, maxWords?: number, required: string[], forbidden: string[] }) => {
+      specs.forEach(({ file, required, forbidden }: { file: string, required: string[], forbidden: string[] }) => {
         const template = templates.find(t => t.file === file);
 
         expect(template).toBeDefined();
-        if (maxWords !== undefined) {
-          expect(wordCount(template!.content)).toBeLessThan(maxWords);
-        }
         required.forEach(snippet => expect(template!.content).toContain(snippet));
         forbidden.forEach(snippet => expect(template!.content).not.toContain(snippet));
       });

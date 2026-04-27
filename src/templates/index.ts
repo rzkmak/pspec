@@ -15,49 +15,21 @@ const loadPrompt = (name: string): string => {
   return fs.readFileSync(filePath, 'utf-8').trim();
 };
 
-export const SUBAGENT_ROLE_NAMES = [
-  '_base',
-  'typescript-engineer',
-  'kotlin-engineer',
-  'test-creator',
-  'debugger',
-  'security-analyst',
-  'investigator',
-];
-
-const loadSubagentRole = (name: string): string => {
-  const filePath = path.join(__dirname, '..', 'subagent', 'roles', `${name}.md`);
-  if (!fs.existsSync(filePath)) {
-    return `SUBAGENT_ROLE_ERROR: ${name}.md not found at ${filePath}`;
-  }
-  return fs.readFileSync(filePath, 'utf-8').trim();
-};
-
-export const subagentRoleTemplates: Template[] = SUBAGENT_ROLE_NAMES.map((name) => ({
-  dir: '.pspec/subagent-roles',
-  file: `${name}.md`,
-  content: loadSubagentRole(name),
-}));
-
 const commandPrompts: Record<string, { desc: string, prompt: string }> = {
-  'pspec.commit-current-branch': {
-    desc: 'Commit current work on the current branch and push',
-    prompt: loadPrompt('pspec.commit-current-branch')
-  },
-  'pspec.commit-raise-pr': {
-    desc: 'Commit current work on a new branch and open a PR',
-    prompt: loadPrompt('pspec.commit-raise-pr')
-  },
   'pspec.spec': {
-    desc: 'Start an inquiry to create a new spec',
+    desc: 'Start an inquiry to create a new PRD',
     prompt: loadPrompt('pspec.spec')
   },
   'pspec.plan': {
-    desc: 'Plan tasks for an existing spec',
+    desc: 'Generate feature specs for an existing PRD',
     prompt: loadPrompt('pspec.plan')
   },
+  'pspec.audit': {
+    desc: 'Audit and sync feature specs with the PRD',
+    prompt: loadPrompt('pspec.audit')
+  },
   'pspec.implement': {
-    desc: 'Implement tasks from a checklist',
+    desc: 'Implement planned feature specs',
     prompt: loadPrompt('pspec.implement')
   },
   'pspec.debug': {
@@ -139,17 +111,16 @@ description: Spec-Driven Development (SDD) toolkit for AI agents.
 # pspec
 
 pspec is a toolkit for Spec-Driven Development. It uses:
-1. **Specs** (\`.pspec/specs/\`) — Intent documents
-2. **Tasks** (\`.pspec/tasks/\`) — Execution checklists
-3. **Subagent Roles** (\`.pspec/subagent-roles/\`) — Expertise prompts
+1. **PRDs** (\`.pspec/specs/\`) — Product requirement documents
+2. **Feature Spec Directories** (\`.pspec/tasks/<stem>/\`) — Implementation-ready feature specs plus \`PROGRESS.md\`
+3. **Agent Commands** — Generated slash commands that guide spec, planning, implementation, debugging, and git flow
 
 ## Commands
-- \`/pspec.spec\`: Create a new spec
-- \`/pspec.plan\`: Plan tasks for a spec
-- \`/pspec.implement\`: Implement planned tasks
+- \`/pspec.spec\`: Create a new PRD
+- \`/pspec.plan\`: Generate feature specs from a PRD
+- \`/pspec.audit\`: Audit and sync feature specs with the PRD
+- \`/pspec.implement\`: Implement planned feature specs
 - \`/pspec.debug\`: Investigate and fix errors
-- \`/pspec.commit-current-branch\`: Commit to current branch
-- \`/pspec.commit-raise-pr\`: Commit and raise PR
 `
     }
   ],
@@ -166,8 +137,4 @@ ${data.prompt}
 
 export function getTemplates(agent: string): Template[] {
   return templates[agent] || [];
-}
-
-export function getSubagentRoleTemplates(): Template[] {
-  return subagentRoleTemplates;
 }

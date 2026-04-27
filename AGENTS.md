@@ -1,44 +1,34 @@
 # pspec Architecture
 
-This document describes the internal architecture of pspec for AI agents and contributors.
+This document describes the current pspec architecture for AI agents and contributors.
 
 ## Overview
 
-pspec is a Spec-Driven Development (SDD) toolkit with three core components:
+pspec is a Spec-Driven Development toolkit with three core workflow layers:
 
-1. **Specs** (`.pspec/specs/`) — Intent documents that define what to build
-2. **Tasks** (`.pspec/tasks/`) — Execution checklists that define how to build it
-3. **Subagent Roles** (`.pspec/subagent-roles/`) — System prompts for parallel AI execution
+1. **PRDs** (`.pspec/specs/`) — product requirement documents that define what to build
+2. **Feature Spec Directories** (`.pspec/tasks/<stem>/`) — implementation-ready feature specs made of `PROGRESS.md` plus one file per feature
+3. **Agent Commands** — generated slash commands that guide spec creation, planning, audit, implementation, and debugging
 
 The CLI (`npx pspec`) generates agent-specific command files that enable slash commands like `/pspec.plan` in AI coding tools.
 
 ## Directory Structure
 
-```
+```text
 src/
 ├── index.ts                    # CLI entry point
 ├── commands/
 │   ├── init.ts                 # Initialize/update pspec in projects
 │   └── init.test.ts            # Tests for init command
-├── templates/
-│   ├── index.ts                # Template loading and generation
-│   ├── index.test.ts           # Template tests with word budgets
-│   └── prompts/                # Agent command prompts
-│       ├── pspec.spec.md       # Spec creation prompt
-│       ├── pspec.plan.md       # Task planning prompt (with parallelization rules)
-│       ├── pspec.implement.md  # Implementation prompt (with subagent orchestration)
-│       ├── pspec.debug.md      # Debugging prompt (with parallel investigation)
-│       ├── pspec.commit-raise-pr.md
-│       └── pspec.commit-current-branch.md
-└── subagent/
-    └── roles/                  # Subagent system prompts
-        ├── _base.md            # Base rules (injected into all subagents)
-        ├── typescript-engineer.md
-        ├── kotlin-engineer.md
-        ├── test-creator.md
-        ├── debugger.md
-        ├── security-analyst.md
-        └── investigator.md
+└── templates/
+    ├── index.ts                # Template loading and generation
+    ├── index.test.ts           # Template behavior tests
+    └── prompts/                # Agent command prompts
+        ├── pspec.spec.md       # Spec creation prompt
+        ├── pspec.plan.md       # Task directory planning prompt
+        ├── pspec.audit.md      # Feature-spec audit and sync prompt
+        ├── pspec.implement.md  # Implementation prompt with review loop rules
+        └── pspec.debug.md      # Debugging prompt
 ```
 
 ## Key Concepts
@@ -58,180 +48,181 @@ export const templates: Record<string, Template[]> = {
 };
 ```
 
-Each agent gets the same prompt content formatted for its specific command system.
+Each agent gets the same prompt content formatted for its command system.
 
-### 2. Subagent Role System
+### 2. PRD Creation Flow
 
-> **Design decision:** We use role-specific system prompts instead of creating specialized agents. Agentic tools (OpenCode, Cursor, Claude Code, etc.) automatically load all agent definitions into their command palette. Creating specialized agents for each role would clutter the UI and make the system harder to manage. Instead, pspec **injects role-specific prompts** when spawning subagents — specialization without UI overhead.
+`/pspec.spec` is intentionally question-driven.
 
-The subagent system enables token-efficient parallel execution:
+- It reads `.pspec/CONTEXT.md` first when present.
+- It asks 5-10 focused questions before drafting.
+- Questions should include prefilled options and a custom-answer path.
+- It stops after asking questions and waits for answers.
+- After answers are collected, the agent runs a checklist review before drafting.
 
-**Role Files** (`src/subagent/roles/`):
-- `_base.md` — Core rules for all subagents (output format, scope constraints)
-- Role files (e.g., `typescript-engineer.md`) — Domain-specific expertise
+The PRD should explicitly capture:
+- product goal and success outcome
+- base flow
+- edge cases and failure modes
+- interfaces or contracts
+- acceptance criteria
+- definition-of-done expectations
 
-**Prompt Composition**:
-When spawning a subagent, the AI composes a system prompt by concatenating:
-1. `_base.md` (always)
-2. Each role file in the subtask's `roles` array
-3. A context block with subtask title, scope, and approach
+The spec should use stable IDs:
+- acceptance criteria as `AC-*`
+- edge cases and failure modes as `EC-*`
 
-**Output Contract**:
-All subagents return structured YAML:
-```yaml
-summary:
-  - "[file:line] finding or action"
-files_touched:
-  - path/to/file.ts
-verification: passed|failed|skipped
-blocked_reason: null
+### 3. Feature Spec Planning
+
+`/pspec.plan` writes a feature-spec directory instead of a single checklist file.
+
+Example layout:
+
+```text
+.pspec/tasks/1742451234567-auth/
+├── PROGRESS.md
+├── 01-model-and-service.md
+├── 02-http-endpoints.md
+└── 03-e2e-verification.md
 ```
 
-This keeps responses condensed (max 5 bullet points) and token-efficient.
+`PROGRESS.md` stores shared context:
+- spec path and stem
+- key files and patterns
+- project commands for test/lint/build
+- naming and export conventions
+- task completion state
+- requirement coverage map
 
-### 3. Parallelization in pspec.plan
+Each feature spec file is outcome-based and may cover multiple files. It should contain:
+- YAML frontmatter with `id`, `title`, `tag`, `spec_ref`, and `depends_on`
+- `Goal`
+- `Requirement Coverage`
+- `Files` with create/modify/reference sections
+- `Data Model`
+- `API Contracts`
+- `UI States`
+- `User Interactions`
+- `Data Test IDs`
+- `Edge Cases`
+- `Approach`
+- `Verification`
+- `Definition Of Done`
 
-The planner detects parallelizable work using these rules:
+`/pspec.plan` is also two-phase:
+- ask questions first and stop
+- wait for answers
+- run a checklist review
+- write `PROGRESS.md` and feature spec files only after the question phase is complete
 
-**Mark `parallelizable: true` when:**
-- Work spans multiple independent modules
-- No data dependency between subtasks
-- Clear, non-overlapping file scopes
-- At least 2 subtasks worth spawning
+`/pspec.plan` must also fail closed:
+- stop if the spec is missing `AC-*` or `EC-*` IDs
+- include a `Coverage Map` in `PROGRESS.md`
+- map every `AC-*` and `EC-*` to at least one feature spec file
+- never save placeholder text in final plan files
 
-**Role Inference (priority order):**
-1. Context keywords (highest priority):
-   - "security", "audit", "crypto" → `security-analyst`
-   - "test", "coverage" → `test-creator`
-   - "debug", "fix", "error" → `debugger`
-   - "find", "locate" → `investigator`
-2. File extensions:
-   - `*.ts`, `*.tsx` → `typescript-engineer`
-   - `*.kt`, `*.kts` → `kotlin-engineer`
-   - `*.test.*`, `*.spec.*` → `test-creator`
-3. Combine roles when context overlaps
-4. Default: `investigator`
+Feature spec contract additions:
+- `Data Model` lists all involved entities, types, fields, and relationships
+- API work must define all endpoints with request and response shapes
+- Web work must define all UI states, user interactions and outcomes, and `data-testid` values up front
 
-**Task File Structure for Parallel Tasks:**
-```yaml
-subagent:
-  max_concurrent: 4
-  max_retries: 1
-  on_final_failure: partial
-  token_budget: 50000
+### 4. Definition Of Done
 
-## Task 3
-parallelizable: true
-subtasks:
-  - id: 3.1
-    roles: [security-analyst, typescript-engineer]
-    scope:
-      files: [src/auth/**/*.ts]
-    approach: |
-      1. Review login flow
-    result: null
-  - id: 3.2
-    roles: [security-analyst]
-    scope:
-      files: [src/api/**/*.ts]
-    approach: |
-      1. Check CSRF
-    result: null
-aggregate_result: null
-```
+Definition of done is part of the workflow contract, not an optional note.
 
-### 4. Orchestration in pspec.implement
+Every task must require:
+- functional behavior finished
+- unit tests added or updated
+- edge cases implemented and verified
+- an end-to-end verification artifact
 
-The implementer follows this protocol for parallelizable tasks:
+End-to-end verification rules:
+- API work -> API call verification script
+- Web work -> Playwright script
+- Other work -> smallest runnable artifact that exercises the real flow
 
-**Step 1: Token Budget Check**
-```
-investigator-only: 1,500 tokens
-single role: 3,000 tokens
-multi-role: 4,500 tokens
+### 5. Implementation Loop
 
-if total_estimated > token_budget:
-  safe_parallelism = floor(token_budget / avg_tokens)
-  batch subtasks into groups
-```
+`/pspec.implement` is serial and review-heavy.
 
-**Step 2: Spawn Subagents**
-- Compose prompt: `_base.md` + role files + context
-- Spawn up to `max_concurrent` at a time
-- Track state: `pending | running | completed | failed`
+Flow:
+1. Read `PROGRESS.md`
+2. Read the source spec and extract all `AC-*` and `EC-*` IDs
+3. Audit feature spec files, `PROGRESS.md`, and the coverage map for parity
+4. Execute feature specs in `id` order
+5. Read each feature spec's reference files before editing
+6. Implement the described outcome
+7. Audit planned files, data model, API/UI contracts, and required artifacts
+8. Run base-case verification, unit tests, edge-case checks, and the end-to-end artifact
+9. Perform the required number of review passes: `TRIVIAL` = 1, `CRITICAL` = 2
+10. Check every `Definition Of Done` bullet with evidence
+11. If review finds problems, fix them and repeat the affected verification and review pass
+12. Mark the feature spec complete in `PROGRESS.md`
+13. Run a final closeout audit before returning done
 
-**Step 3: Collect Results**
-- Parse YAML output from each subagent
-- Populate `result` field in task file
-- If failed and retries remain: queue for retry
-- If retries exhausted: apply `on_final_failure` policy
+Implementation is one feature spec file at a time. Do not batch feature specs.
 
-**Step 4: Aggregate**
-- Combine all `summary` arrays
-- Group by type, deduplicate
-- Write max 10 bullet points to `aggregate_result`
-- Run verification, mark task `[x]`
+Truthfulness rule:
+- never claim a verification step passed unless it was actually run and succeeded
+- if a required section is missing, stop and report it instead of guessing
+- if a required verification step cannot run because of environment or external dependency issues, mark the task blocked
+- do not return done while any `[ ]` or `[~]` remains in `PROGRESS.md`
+- do not ignore task-registry or coverage-map mismatches
 
-### 5. Parallel Investigation in pspec.debug
+### 6. Debugging Flow
 
-The debugger uses subagents for complex bugs with multiple hypotheses:
+`/pspec.debug` stays simple:
 
-**When to Parallelize:**
-- Multiple independent hypotheses
-- Each hypothesis requires distinct, non-overlapping file sets
-- Serial checking would be expensive
+- start with direct triage
+- create a minimal reproduction when possible
+- work serially through likely hypotheses
+- apply the smallest correct fix
+- update the active feature-spec directory when the bug is tied to planned work
+- never claim the bug is fixed unless the reproduction or a relevant regression check passes
 
-**Role Inference from Error Context:**
-- JS/TS stack trace → `debugger` + `typescript-engineer`
-- Kotlin/JVM trace → `debugger` + `kotlin-engineer`
-- Test failure → `debugger` + `test-creator`
-- Auth/crypto error → `debugger` + `security-analyst`
-- Default → `debugger`
+### 7. Audit Flow
 
-**Flow:**
-1. Compose prompts for each hypothesis
-2. Spawn up to 3 subagents at a time
-3. Collect YAML summaries
-4. If one confirmed → proceed with fix
-5. If all inconclusive → report evidence and stop
+`/pspec.audit` reconciles a feature-spec directory with its PRD.
+
+- read `PROGRESS.md` and the source PRD
+- audit feature-spec files, coverage map, and feature-spec registry for parity
+- update planning artifacts when the PRD changed
+- preserve valid completed work when possible
+- downgrade stale completed items when requirement coverage changed materially
+- never change product code; only update `PROGRESS.md` and feature spec files
 
 ## Testing
 
-The codebase uses Jest with strict word budget tests:
+The codebase uses Jest to verify:
+- generated templates for each supported agent
+- command prompt content requirements
+- init scaffolding behavior
 
-```typescript
-// templates/index.test.ts
-{
-  file: 'pspec.debug.md',
-  maxWords: 320,  // Enforced via wordCount()
-  required: ['Start with direct triage.', 'Use parallel investigation only for distinct hypotheses'],
-  forbidden: ['grep_search', 'Resource Cleanup']
-}
-```
-
-Word budgets ensure prompts remain token-efficient and focused.
+The tests intentionally assert workflow requirements, phase boundaries, and literal output schema rather than prompt word budgets.
+They also protect fail-closed rules such as requirement IDs, coverage maps, placeholder bans, and final closeout checks.
 
 ## Extending the System
 
-### Adding a New Role
-
-1. Create `src/subagent/roles/<role-name>.md`
-2. Add role name to `SUBAGENT_ROLE_NAMES` in `templates/index.ts`
-3. Update role inference rules in `pspec.plan.md`
-4. Run `npm test` to verify
-
 ### Adding a New Agent
 
-1. Add agent to `choices` array in `commands/init.ts`
-2. Create formatter in `templates/index.ts` `templates` record
-3. Add test case in `templates/index.test.ts`
+1. Add the agent to `choices` in `src/commands/init.ts`
+2. Add the formatter in `src/templates/index.ts`
+3. Add or update tests in `src/templates/index.test.ts` and `src/commands/init.test.ts`
+
+### Changing the Workflow
+
+When adjusting pspec flow, update all of these together:
+1. Prompt templates in `src/templates/prompts/`
+2. Generated template expectations in `src/templates/index.test.ts`
+3. CLI init behavior in `src/commands/init.ts` if project scaffolding changes
+4. README and this architecture document
 
 ## Key Constraints
 
-- **Token Efficiency:** Prompts have strict word budgets
-- **Universal Compatibility:** Works across all AI agents via standardized prompts
+- **Universal Compatibility:** Works across multiple AI agents through generated command files
 - **Minimal Intrusion:** pspec only touches `.pspec/`, `.*/commands/`, and `.*/rules/`
-- **No Runtime Dependencies:** The CLI only generates files; execution is handled by AI agents
+- **Human Readability:** Specs and task directories should remain easy to inspect directly
+- **Quality Over Brevity:** Prompt compactness is useful, but completeness and verification come first
 
 ## Configuration
 
@@ -247,17 +238,15 @@ Word budgets ensure prompts remain token-efficient and focused.
 }
 ```
 
-The subagent roles directory (`.pspec/subagent-roles/`) is always created on init/update and is not configurable.
-
 ## CONTEXT.md
 
-`.pspec/CONTEXT.md` is an optional project-level context file created as an empty stub by `npx pspec`. When present, `/pspec.spec` treats it as the **primary source of truth** for project architecture, patterns, and constraints — taking precedence over codebase exploration.
+`.pspec/CONTEXT.md` is an optional project-level context file created as an empty stub by `npx pspec`. When present, `/pspec.spec` treats it as the primary source of truth for product context, architecture, patterns, and constraints.
 
-Fill it manually with:
-- Project architecture overview
-- Key constraints and non-negotiables
-- Tech stack and versions
-- Integration patterns or shared conventions
+Fill it with:
+- project architecture overview
+- key constraints and non-negotiables
+- tech stack and versions
+- integration patterns or shared conventions
 
 Example:
 
@@ -269,6 +258,6 @@ REST API with Express + PostgreSQL. All handlers in `src/handlers/`, models in `
 
 ## Constraints
 - Node 20+, TypeScript strict mode
-- No default exports — named exports only
+- No default exports - named exports only
 - All DB access through repository layer, never direct in handlers
 ```

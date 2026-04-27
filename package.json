@@ -1,13 +1,12 @@
 {
   "name": "pspec",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "pspec (picospec) is the smallest specification toolkit for solo developers and AI agents",
   "main": "dist/index.js",
   "scripts": {
     "test": "jest",
     "build": "rm -rf dist && tsc && mkdir -p dist/templates/prompts && cp src/templates/prompts/*.md dist/templates/prompts/",
-    "prepack": "npm run build",
-    "report:budgets": "node dist/report-template-budgets.js"
+    "prepack": "npm run build"
   },
   "keywords": [
     "pspec",
