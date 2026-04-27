@@ -156,12 +156,12 @@ describe('templates', () => {
       const specs = [
         {
           file: 'pspec.spec.md',
-          required: ['Product Requirements Document (PRD)', 'You are an AI Product Manager using the pspec framework.', 'In the first response, ask questions only. Do not write the PRD in the same response.', 'Reply using Q1/Q2/...', 'AC-01', 'EC-01', 'Do not save placeholder text', '<epoch-ms>-<slug>.md', '/pspec.plan .pspec/specs/'],
+          required: ['Product Requirements Document (PRD)', 'You are an AI Product Manager using the pspec framework.', 'In the first response, ask questions only. Do not write the PRD in the same response.', 'finish the full PRD drafting run in one pass', 'Do not stop in the middle of Phase 2 to hand back a partial PRD', 'Reply using Q1/Q2/...', 'AC-01', 'EC-01', 'Do not save placeholder text', '<epoch-ms>-<slug>.md', '/pspec.plan .pspec/specs/'],
           forbidden: ['Ask 0-3 targeted questions', 'Approval Gate 1', 'Resource Cleanup', 'Draft immediately when the request is concrete.', 'not confident enough to assume']
         },
         {
           file: 'pspec.plan.md',
-          required: ['generate a feature-spec directory', 'Do not write the feature-spec directory in the same response where you ask questions.', '## Feature Specs', '## Coverage Map', '## Data Model', '## API Contracts', '## UI States', '## User Interactions', '## Data Test IDs', 'request and response shapes', 'loading, empty, error, and success states', 'data-testid', '/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md'],
+          required: ['generate a feature-spec directory', 'Do not write the feature-spec directory in the same response where you ask questions.', 'finish the full planning run in one pass', 'Do not stop in the middle of Phase 2 to hand back a partial directory, draft files, TODO list, checkpoint, or "next steps"', '## Feature Specs', '## Coverage Map', '## Data Model', '## API Contracts', '## UI States', '## User Interactions', '## Data Test IDs', 'request and response shapes', 'loading, empty, error, and success states', 'data-testid', '/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md'],
           forbidden: ['parallelizable', 'subtasks', 'aggregate_result', 'token_budget', 'Ask for approval only once', 'not confident enough to assume', 'files.create']
         },
         {
@@ -171,7 +171,7 @@ describe('templates', () => {
         },
         {
           file: 'pspec.implement.md',
-          required: ['treat the task directory as a feature-spec directory', '## Feature Specs', '## Requirement Coverage', '## Data Model', '## API Contracts', '## UI States', '## User Interactions', '## Data Test IDs', 'implemented API endpoints still match the planned request/response shapes', 'implemented UI states, interactions, and `data-testid` values still match the feature spec', 'Check every bullet in `## Definition Of Done` one by one.', 'Do not return `done` while any `[ ]` or `[~]` remains.'],
+          required: ['treat the task directory as a feature-spec directory', 'Run the entire implementation loop from Phase 1 through Phase 6', 'Do not stop in the middle of the run to hand back a plan, TODO list, checkpoint, or "next steps"', '## Feature Specs', '## Requirement Coverage', '## Data Model', '## API Contracts', '## UI States', '## User Interactions', '## Data Test IDs', 'implemented API endpoints still match the planned request/response shapes', 'implemented UI states, interactions, and `data-testid` values still match the feature spec', 'Check every bullet in `## Definition Of Done` one by one.', 'Do not return `done` while any `[ ]` or `[~]` remains.', 'Do not use `partial` or `blocked` for a voluntary mid-run handoff.'],
           forbidden: ['parallelizable', 'subagent', 'token_budget', 'log it and proceed to the next task', 'confidence is low']
         },
         {
