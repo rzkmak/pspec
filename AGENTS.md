@@ -155,6 +155,8 @@ End-to-end verification rules:
 
 It must finish the full run whenever work remains runnable. It should not stop mid-run to hand back a todo list, checkpoint, or next-steps handoff when it can still diagnose, fix, verify, and continue itself.
 
+It must not tell the user to run `/pspec.implement` again to continue remaining runnable work. After one feature spec is complete, it should immediately continue to the next eligible feature spec in the same run.
+
 Flow:
 1. Read `PROGRESS.md`
 2. Read the source spec and extract all `AC-*` and `EC-*` IDs
@@ -188,6 +190,7 @@ Truthfulness rule:
 - use `partial` only when the current run completed at least one additional feature spec before an explicit blocker stopped it
 - use `blocked` only when the current run could not complete any additional feature spec because an explicit blocker stopped it
 - never use `partial` or `blocked` for a voluntary mid-run handoff
+- never ask the user to rerun `/pspec.implement` while runnable work still remains
 
 ### 6. Debugging Flow
 
