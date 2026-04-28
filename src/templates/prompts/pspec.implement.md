@@ -7,7 +7,8 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 2. Do not stop in the middle of the run to hand back a plan, TODO list, checkpoint, or "next steps" when you can still make progress yourself.
 3. If a check, test, or review step fails, diagnose it, fix it, rerun the affected verification, and keep going.
 4. Only stop early when this prompt explicitly tells you to stop for a real blocker, invalid planning artifact, missing required section, or external dependency you cannot resolve.
-5. Do not leave unfinished implementation behind as `TODO`, `FIXME`, placeholder text, or follow-up markers unless the feature spec explicitly allows it.
+5. Treat `PROGRESS.md` as a resumable write-ahead log. Persist the current feature spec and next resume step before code edits and after each major checkpoint.
+6. Do not leave unfinished implementation behind as `TODO`, `FIXME`, placeholder text, or follow-up markers unless the feature spec explicitly allows it.
 
 ## Phase 1 - Load
 
@@ -17,6 +18,8 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
    - follow `context.patterns` for implementation style
    - use `context.commands` for test, lint, and build invocations
    - apply `context.conventions` for naming and export style
+   - read `## Active Work` as the resume checkpoint when present
+   - if `## Active Work` is missing, add it before implementation begins. Initialize it to the existing `[>]` feature spec when one already exists, otherwise use `Current: None`, `Phase: idle`, and a short resume note
 3. Before any edits, read `AGENTS.md` or `CLAUDE.md` if present. These override `context.conventions` when they conflict.
 4. Read the PRD file referenced by `PROGRESS.md`. Extract every `AC-*` and `EC-*` ID from the PRD. If the PRD file cannot be read or does not contain these IDs, stop and report it.
 5. Enumerate the feature spec files in the directory matching `<2-digit-id>-<slug>.md` and sort them in numeric order.
@@ -31,8 +34,12 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
    - every `AC-*` and `EC-*` from the PRD appears at least once
    - every mapped feature spec file exists
    - every feature spec file frontmatter `spec_ref` uses only IDs that exist in the PRD
-8. If any directory, registry, or coverage mismatch exists, stop and report the first mismatch. Do not guess.
+8. If any directory, registry, coverage, or resume-state mismatch exists, stop and report the first mismatch. Do not guess.
 9. Execute feature specs in strict `id` order. Do not start a feature spec until every dependency in its `depends_on` list is complete in `PROGRESS.md`.
+   - if exactly one feature spec is marked `[>]`, resume that feature spec before any `[ ]` item
+   - if more than one feature spec is marked `[>]`, stop and report it
+   - if `## Active Work` points to a feature spec, it must match the sole `[>]` entry
+   - do not start a new feature spec until the current `[>]` item is resolved to `[x]` or `[~]`
 10. Process one feature spec file at a time. Do not batch feature specs.
 11. Only proceed with a feature spec file when all of these are present:
     - YAML frontmatter with `id`, `title`, `tag`, `spec_ref`, and `depends_on`
@@ -52,9 +59,14 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 
 ## Phase 3 - Implement
 
-13. Read every file listed under `## Files > ### Reference` before writing code.
+13. Before any code edits for the current feature spec, persist the resume state in `PROGRESS.md`, then read every file listed under `## Files > ### Reference` before writing code.
+    - mark the feature spec `[>]`
+    - update `## Active Work` with the current file, current phase, and the next concrete resume step
 14. Follow the `## Approach` steps in order.
-15. Create and modify all listed files, including tests and verification artifacts.
+15. Create and modify all listed files, including tests and verification artifacts. After each major checkpoint, refresh `## Active Work` before continuing:
+    - after implementation changes are in place
+    - after each verification block succeeds or fails
+    - after each review pass completes or finds issues
 16. Keep implementation aligned with the feature-spec contract:
     - implement all items in `## Data Model`
     - if `## API Contracts` is not `Not applicable`, implement the listed endpoints and request/response shapes
@@ -80,7 +92,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
     - E2E
 20. Never claim a verification step passed unless you actually ran it and it succeeded.
 21. If a verification step fails, fix the feature spec and rerun that step.
-22. If a verification step cannot run because of an external dependency or environment issue you cannot resolve, mark the feature spec `[~]` in `PROGRESS.md` with the exact reason and stop the run.
+22. If a verification step cannot run because of an external dependency or environment issue you cannot resolve, mark the feature spec `[~]` in `PROGRESS.md` with the exact reason, update `## Active Work` with the blocker context, and stop the run.
 23. Do not mark `[x]` when a required verification step was skipped, failed, or could not run.
 24. Review pass rules:
     - `TRIVIAL` -> 1 full review pass
@@ -98,14 +110,15 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 
 ## Phase 6 - Complete And Close Out
 
-28. Mark completion in `PROGRESS.md` immediately after all required verification and review passes succeed. Add a short note only when useful.
+28. Mark completion in `PROGRESS.md` immediately after all required verification and review passes succeed. Clear `## Active Work` back to `Current: None`, `Phase: idle`, and a short note about the next ready feature spec. Add a short note only when useful.
 29. Continue to the next feature spec only after the current feature spec is marked `[x]`.
 30. After the last feature spec, run a final closeout audit:
     - no `[ ]` remains in `PROGRESS.md`
+    - no `[>]` remains in `PROGRESS.md`
     - no `[~]` remains in `PROGRESS.md`
     - every `AC-*` and `EC-*` in `## Coverage Map` is satisfied by one or more `[x]` feature specs
     - no placeholder text like `<...>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` remains in `PROGRESS.md` or feature spec files unless explicitly allowed
-31. Do not return `done` while any `[ ]` or `[~]` remains.
+31. Do not return `done` while any `[ ]`, `[>]`, or `[~]` remains.
 32. Return a compact result when all runnable feature specs are done:
     - completed feature specs
     - files changed
@@ -117,8 +130,11 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 
 - Read `PROGRESS.md` before feature spec files; it is the shared context source
 - Use `context.key_files` as scope; minimize exploration outside those paths
+- If `PROGRESS.md` already has one `[>]` feature spec, resume it before any new work
+- Treat `PROGRESS.md` as the resumable source of truth; persist the current phase and next resume step whenever state changes
 - Execute feature specs in `id` order, respecting `depends_on`
 - Process one feature spec file at a time
+- Never leave more than one feature spec marked `[>]`
 - Do not mark a feature spec complete until functional behavior, unit coverage, edge-case coverage, and end-to-end verification all pass
 - Never claim success for a check you did not run
 - Stop on the first feature-spec registry, coverage-map, or missing-section mismatch
@@ -130,7 +146,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 ## Output
 
 - Status: [done|partial|blocked]
-- Use `done` only when the final closeout audit passes and no `[ ]` or `[~]` remains.
+- Use `done` only when the final closeout audit passes and no `[ ]`, `[>]`, or `[~]` remains.
 - Use `partial` only when the current run completed at least one additional feature spec but then stopped on an explicit blocker allowed by this prompt.
 - Use `blocked` only when the current run could not complete any additional feature spec because it stopped on an explicit blocker allowed by this prompt.
 - Do not use `partial` or `blocked` for a voluntary mid-run handoff.

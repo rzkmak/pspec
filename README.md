@@ -139,6 +139,12 @@ context:
 
 # Progress
 
+## Status Keys
+- `[ ]` not started
+- `[>]` in progress
+- `[x]` complete
+- `[~]` blocked
+
 ## Coverage Map
 - `AC-01` -> `01-model-and-service.md`
 - `EC-01` -> `01-model-and-service.md`, `02-http-endpoints.md`
@@ -148,8 +154,14 @@ context:
 - [ ] `02-http-endpoints.md` - Add login and logout endpoints
 - [ ] `03-web-verification.md` - Add UI states, test IDs, and end-to-end verification
 
+## Active Work
+- Current: `None`
+- Phase: `idle`
+- Resume: `Start with the next [ ] feature spec in numeric order.`
+
 ## Notes
 - Complete tasks in numeric order unless a dependency note says otherwise.
+- Mark a feature spec `[>]` and update `## Active Work` before editing code so interrupted runs can resume cleanly.
 - A task is done only when its definition of done passes.
 ```
 
@@ -278,9 +290,11 @@ Use `/pspec.implement` with the feature-spec directory or `PROGRESS.md` path.
 - It audits that `PROGRESS.md` and the real feature spec files match before starting work.
 - It executes feature specs in order, respecting dependencies.
 - It processes one feature spec file at a time.
+- It treats `PROGRESS.md` as a resumable checkpoint and resumes any existing `[>]` feature spec before new work.
+- It keeps `## Active Work` updated with the current feature spec, phase, and next resume step.
 - It keeps running the full implementation loop until every runnable feature spec is complete or the run is explicitly blocked.
 - It does not hand back a mid-run todo list, checkpoint, or next-steps handoff when it can still make progress itself.
-- `done` means the final closeout audit passed and no `[ ]` or `[~]` remains.
+- `done` means the final closeout audit passed and no `[ ]`, `[>]`, or `[~]` remains.
 - `partial` means the current run completed at least one additional feature spec before an explicit blocker stopped it.
 - `blocked` means the current run could not complete any additional feature spec because an explicit blocker stopped it.
 - It must not use `partial` or `blocked` for a voluntary mid-run handoff.
@@ -304,7 +318,7 @@ Truthfulness rules:
 - if a feature spec file is missing a required section, the agent should stop and report the first missing section instead of guessing
 - if a required verification step cannot run because of an external dependency or environment issue, the feature spec should be marked blocked
 - it should not mark a feature spec complete until every planned file, verification artifact, API/UI contract, and definition-of-done bullet is accounted for
-- it must not return `done` while any `[ ]` or `[~]` remains in `PROGRESS.md`
+- it must not return `done` while any `[ ]`, `[>]`, or `[~]` remains in `PROGRESS.md`
 - it must not use `partial` or `blocked` for a voluntary mid-run handoff
 
 ### Step 6: Debugging

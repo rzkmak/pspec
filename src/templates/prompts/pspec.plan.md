@@ -38,7 +38,7 @@ When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec 
 15. If one required category is still missing, ask 1 short follow-up question and wait again. Otherwise continue.
 16. Read the saved PRD and extract every `AC-*` and `EC-*` ID. If the PRD is missing these IDs, stop and report that the PRD must be fixed before planning.
 17. Write the feature-spec directory at `.pspec/tasks/<spec-stem>/`.
-18. Create `PROGRESS.md` inside that directory. `PROGRESS.md` is the completion tracker and shared context source for implementation.
+18. Create `PROGRESS.md` inside that directory. `PROGRESS.md` is the completion tracker, shared context source, and resume checkpoint for implementation.
 19. Create multiple feature spec files inside the same directory, named `<2-digit-id>-<slug>.md`.
 20. A feature spec is a cohesive implementation outcome, not a single file. One feature spec file may touch multiple production, test, config, or script files when they belong to the same change.
 21. Break work into atomic feature specs that one model can implement and verify end-to-end. Group tightly coupled files together. Split feature specs only when sequencing or review clarity improves.
@@ -51,9 +51,10 @@ When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec 
 26. Sequence feature specs so `depends_on` always references lower feature-spec IDs. Use both the feature-spec ID and title in `depends_on` entries to avoid misreferences.
 27. In `PROGRESS.md`, `## Feature Specs` must list every feature spec file exactly once in numeric order.
 28. The filename and title in `## Feature Specs` must exactly match the real feature spec file and its frontmatter. Do not create orphan feature spec files and do not omit any feature spec file from `PROGRESS.md`.
-29. Add `## Coverage Map` to `PROGRESS.md`. Map every `AC-*` and `EC-*` from the PRD to one or more feature spec files.
-30. Do not finish the plan while any `AC-*` or `EC-*` ID has no mapped feature spec.
-31. Each feature spec file must use this exact section order:
+29. Add `## Active Work` to `PROGRESS.md`. Initialize it with `Current: None`, `Phase: idle`, and a short resume note that no feature spec is in progress yet.
+30. Add `## Coverage Map` to `PROGRESS.md`. Map every `AC-*` and `EC-*` from the PRD to one or more feature spec files.
+31. Do not finish the plan while any `AC-*` or `EC-*` ID has no mapped feature spec.
+32. Each feature spec file must use this exact section order:
     - `# Goal`
     - `## Requirement Coverage`
     - `## Files`
@@ -66,40 +67,40 @@ When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec 
     - `## Approach`
     - `## Verification`
     - `## Definition Of Done`
-32. In `## Files`, use these exact subsections:
+33. In `## Files`, use these exact subsections:
     - `### Create`
     - `### Modify`
     - `### Reference`
-33. In `## Verification`, include these exact blocks:
+34. In `## Verification`, include these exact blocks:
     - `Base case`
     - `Unit tests`
     - `Edge cases`
     - `E2E`
-34. `## Data Model` must list all data entities, types, fields, and relationships involved in the feature spec.
-35. If the feature spec includes API work, `## API Contracts` must list all API endpoints involved with request and response shapes.
-36. If the feature spec includes web work, include all of these:
+35. `## Data Model` must list all data entities, types, fields, and relationships involved in the feature spec.
+36. If the feature spec includes API work, `## API Contracts` must list all API endpoints involved with request and response shapes.
+37. If the feature spec includes web work, include all of these:
     - `## UI States` with loading, empty, error, and success states when applicable
     - `## User Interactions` with each user action and expected outcome
     - `## Data Test IDs` with the `data-testid` values that must be defined up front and reused in code and tests
-37. If a section does not apply, write `Not applicable` instead of omitting it.
-38. Definition of done for every feature spec must require:
+38. If a section does not apply, write `Not applicable` instead of omitting it.
+39. Definition of done for every feature spec must require:
     - functional behavior finished
     - unit tests added or updated
     - edge cases implemented and verified
     - an end-to-end verification artifact
-39. End-to-end verification rules:
+40. End-to-end verification rules:
     - API work -> include an API call verification script
     - Web work -> include a Playwright script
     - Other work -> include the smallest runnable end-to-end verification artifact that exercises the real flow
-40. Do not save placeholder text like `<path>`, `<cmd>`, `<outcome>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` in `PROGRESS.md` or feature spec files. If a required value is unknown, ask a follow-up instead of writing files.
-41. Before returning, audit the saved directory and fix any mismatch between `PROGRESS.md`, feature spec files, frontmatter, filenames, or the coverage map.
-42. Return:
+41. Do not save placeholder text like `<path>`, `<cmd>`, `<outcome>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` in `PROGRESS.md` or feature spec files. If a required value is unknown, ask a follow-up instead of writing files.
+42. Before returning, audit the saved directory and fix any mismatch between `PROGRESS.md`, feature spec files, frontmatter, filenames, or the coverage map.
+43. Return:
     - the saved feature-spec directory path
     - the `PROGRESS.md` path
     - the feature spec file list
     - the full contents of `PROGRESS.md` and each feature spec file
     - brief sequencing notes or key risks only when useful
-43. Offer the next step as a single copy-pasteable command using the exact `PROGRESS.md` path just written: `/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md`
+44. Offer the next step as a single copy-pasteable command using the exact `PROGRESS.md` path just written: `/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md`
 
 ## Question Output
 
@@ -140,9 +141,10 @@ context:
 # Progress
 
 ## Status Keys
-- [ ] not started
-- [x] complete
-- [~] blocked
+- `[ ]` not started
+- `[>]` in progress
+- `[x]` complete
+- `[~]` blocked
 
 ## Coverage Map
 - `AC-01` -> `01-<slug>.md`
@@ -152,8 +154,14 @@ context:
 - [ ] `01-<slug>.md` - <feature spec title>
 - [ ] `02-<slug>.md` - <feature spec title>
 
+## Active Work
+- Current: `None`
+- Phase: `idle`
+- Resume: `Start with the next [ ] feature spec in numeric order.`
+
 ## Notes
 - Complete feature specs in numeric order unless `depends_on` says otherwise.
+- When a feature spec starts, mark it `[>]` and update `## Active Work` before editing code.
 - A feature spec is complete only when its definition of done passes.
 ```
 
