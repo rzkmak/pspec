@@ -294,6 +294,8 @@ Use `/pspec.implement` with the feature-spec directory or `PROGRESS.md` path.
 - It keeps `## Active Work` updated with the current feature spec, phase, and next resume step.
 - It keeps running the full implementation loop until every runnable feature spec is complete or the run is explicitly blocked.
 - It does not hand back a mid-run todo list, checkpoint, or next-steps handoff when it can still make progress itself.
+- It must not tell the user to run `/pspec.implement` again to continue remaining runnable feature specs.
+- After one feature spec is marked complete, it immediately starts the next eligible feature spec in the same run.
 - `done` means the final closeout audit passed and no `[ ]`, `[>]`, or `[~]` remains.
 - `partial` means the current run completed at least one additional feature spec before an explicit blocker stopped it.
 - `blocked` means the current run could not complete any additional feature spec because an explicit blocker stopped it.

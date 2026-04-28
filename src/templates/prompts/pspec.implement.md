@@ -5,10 +5,11 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 
 1. Run the entire implementation loop from Phase 1 through Phase 6 and continue feature spec by feature spec until the directory is fully complete.
 2. Do not stop in the middle of the run to hand back a plan, TODO list, checkpoint, or "next steps" when you can still make progress yourself.
-3. If a check, test, or review step fails, diagnose it, fix it, rerun the affected verification, and keep going.
-4. Only stop early when this prompt explicitly tells you to stop for a real blocker, invalid planning artifact, missing required section, or external dependency you cannot resolve.
-5. Treat `PROGRESS.md` as a resumable write-ahead log. Persist the current feature spec and next resume step before code edits and after each major checkpoint.
-6. Do not leave unfinished implementation behind as `TODO`, `FIXME`, placeholder text, or follow-up markers unless the feature spec explicitly allows it.
+3. Never tell the user to run `/pspec.implement` again to continue remaining feature specs. If more runnable work remains in the directory, continue within the same run.
+4. If a check, test, or review step fails, diagnose it, fix it, rerun the affected verification, and keep going.
+5. Only stop early when this prompt explicitly tells you to stop for a real blocker, invalid planning artifact, missing required section, or external dependency you cannot resolve.
+6. Treat `PROGRESS.md` as a resumable write-ahead log. Persist the current feature spec and next resume step before code edits and after each major checkpoint.
+7. Do not leave unfinished implementation behind as `TODO`, `FIXME`, placeholder text, or follow-up markers unless the feature spec explicitly allows it.
 
 ## Phase 1 - Load
 
@@ -112,14 +113,15 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 
 28. Mark completion in `PROGRESS.md` immediately after all required verification and review passes succeed. Clear `## Active Work` back to `Current: None`, `Phase: idle`, and a short note about the next ready feature spec. Add a short note only when useful.
 29. Continue to the next feature spec only after the current feature spec is marked `[x]`.
-30. After the last feature spec, run a final closeout audit:
+30. If another runnable feature spec remains after one is marked `[x]`, immediately start the next eligible feature spec in the same run. Do not pause to ask the user to continue.
+31. After the last feature spec, run a final closeout audit:
     - no `[ ]` remains in `PROGRESS.md`
     - no `[>]` remains in `PROGRESS.md`
     - no `[~]` remains in `PROGRESS.md`
     - every `AC-*` and `EC-*` in `## Coverage Map` is satisfied by one or more `[x]` feature specs
     - no placeholder text like `<...>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` remains in `PROGRESS.md` or feature spec files unless explicitly allowed
-31. Do not return `done` while any `[ ]`, `[>]`, or `[~]` remains.
-32. Return a compact result when all runnable feature specs are done:
+32. Do not return `done` while any `[ ]`, `[>]`, or `[~]` remains.
+33. Return a compact result when all runnable feature specs are done:
     - completed feature specs
     - files changed
     - verification runs and status
@@ -141,6 +143,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 - Match naming and export conventions exactly
 - Prefer existing helpers over new abstractions
 - Never pause between feature specs or ask for confirmation mid-run
+- Never ask the user to rerun `/pspec.implement` to continue remaining runnable work
 - Never commit changes unless explicitly asked
 
 ## Output
