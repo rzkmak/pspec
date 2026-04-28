@@ -22,6 +22,8 @@ Use this command when a PRD changed after planning, when feature spec files drif
    - every `AC-*` and `EC-*` from the PRD appears at least once
    - every mapped feature spec file exists
    - every feature spec file frontmatter `spec_ref` uses only IDs that exist in the PRD
+   - at most one feature spec is marked `[>]`
+   - if `## Active Work` points to a feature spec, that file exists and matches the sole `[>]` entry
 7. For each feature spec file, verify that all required sections exist:
    - `# Goal`
    - `## Requirement Coverage`
@@ -48,12 +50,14 @@ Use this command when a PRD changed after planning, when feature spec files drif
 9. If the PRD changed, update the planning artifacts so the feature-spec directory matches the PRD again.
 10. Sync rules:
     - keep valid feature spec files when they still cover the right requirements
-    - update `PROGRESS.md` task registry, coverage map, and shared context when needed
+    - update `PROGRESS.md` task registry, `## Active Work`, coverage map, and shared context when needed
     - update feature spec file `spec_ref`, `## Requirement Coverage`, and other planning sections when they drift from the PRD
     - create new feature spec files when new `AC-*` or `EC-*` requirements are uncovered
     - remove stale requirement references that no longer exist in the PRD
 11. Preserve completed work when it is still valid:
     - if a feature spec is marked `[x]` and still matches the PRD, keep it complete
+    - if a feature spec is marked `[>]` and still matches the PRD, keep it in progress and preserve or refresh its resume note
+    - if a feature spec is marked `[>]` but its requirement coverage or plan contract changed materially, downgrade it to `[ ]` and clear or update `## Active Work`
     - if a feature spec is marked `[x]` but its requirement coverage or plan contract changed materially, downgrade it to `[ ]` and add a short note in `PROGRESS.md`
     - if a feature spec is marked `[~]`, keep the blocked note unless the drift resolution clearly removes the blocker
 12. Renumber feature spec files only when required to restore deterministic numeric order. Minimize renames when possible.
@@ -63,6 +67,7 @@ Use this command when a PRD changed after planning, when feature spec files drif
 
 14. After syncing, run the audit again and confirm all of these are true:
     - `PROGRESS.md` and feature spec files agree
+    - `## Active Work` matches the in-progress state or is idle when no feature spec is `[>]`
     - every `AC-*` and `EC-*` is mapped in `## Coverage Map`
     - every feature spec file has all required sections
     - API work defines endpoints with request and response shapes

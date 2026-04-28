@@ -96,6 +96,7 @@ Example layout:
 - project commands for test/lint/build
 - naming and export conventions
 - task completion state
+- active in-progress resume state
 - requirement coverage map
 
 Each feature spec file is outcome-based and may cover multiple files. It should contain:
@@ -169,13 +170,20 @@ Flow:
 12. Mark the feature spec complete in `PROGRESS.md`
 13. Run a final closeout audit before returning done
 
+Resume guardrails:
+- `PROGRESS.md` is the resumable source of truth, not just a final checklist
+- mark the active feature spec `[>]` before code edits begin
+- keep `## Active Work` updated with the current feature spec, current phase, and next resume step at major checkpoints
+- if a session is interrupted, resume the existing `[>]` feature spec before starting a new `[ ]` item
+- never leave more than one `[>]` entry in `PROGRESS.md`
+
 Implementation is one feature spec file at a time. Do not batch feature specs.
 
 Truthfulness rule:
 - never claim a verification step passed unless it was actually run and succeeded
 - if a required section is missing, stop and report it instead of guessing
 - if a required verification step cannot run because of environment or external dependency issues, mark the task blocked
-- do not return done while any `[ ]` or `[~]` remains in `PROGRESS.md`
+- do not return done while any `[ ]`, `[>]`, or `[~]` remains in `PROGRESS.md`
 - do not ignore task-registry or coverage-map mismatches
 - use `partial` only when the current run completed at least one additional feature spec before an explicit blocker stopped it
 - use `blocked` only when the current run could not complete any additional feature spec because an explicit blocker stopped it
@@ -200,6 +208,7 @@ Truthfulness rule:
 - audit feature-spec files, coverage map, and feature-spec registry for parity
 - update planning artifacts when the PRD changed
 - preserve valid completed work when possible
+- preserve valid in-progress resume state when possible
 - downgrade stale completed items when requirement coverage changed materially
 - never change product code; only update `PROGRESS.md` and feature spec files
 
