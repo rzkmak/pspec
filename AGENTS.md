@@ -168,7 +168,7 @@ Flow:
 8. Run base-case verification, unit tests, edge-case checks, and the end-to-end artifact
 9. Perform the required number of review passes: `TRIVIAL` = 1, `CRITICAL` = 2
 10. Check every `Definition Of Done` bullet with evidence
-11. If review finds problems, fix them and repeat the affected verification and review pass
+11. If review finds problems, diagnose all identified errors, fix them in a single batch, and repeat the affected verification and review pass
 12. Mark the feature spec complete in `PROGRESS.md`
 13. Run a final closeout audit before returning done
 
