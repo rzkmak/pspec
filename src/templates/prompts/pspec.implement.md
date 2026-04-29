@@ -6,7 +6,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 1. Run the entire implementation loop from Phase 1 through Phase 6 and continue feature spec by feature spec until the directory is fully complete.
 2. Do not stop in the middle of the run to hand back a plan, TODO list, checkpoint, or "next steps" when you can still make progress yourself.
 3. Never tell the user to run `/pspec.implement` again to continue remaining feature specs. If more runnable work remains in the directory, continue within the same run.
-4. If a check, test, or review step fails, diagnose it, fix it, rerun the affected verification, and keep going.
+4. If a check, test, or review step fails, diagnose all identified errors, fix them in a single batch, rerun the affected verification, and keep going.
 5. Only stop early when this prompt explicitly tells you to stop for a real blocker, invalid planning artifact, missing required section, or external dependency you cannot resolve.
 6. Treat `PROGRESS.md` as a resumable write-ahead log. Persist the current feature spec and next resume step before code edits and after each major checkpoint.
 7. Do not leave unfinished implementation behind as `TODO`, `FIXME`, placeholder text, or follow-up markers unless the feature spec explicitly allows it.
@@ -92,7 +92,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
     - Edge cases
     - E2E
 20. Never claim a verification step passed unless you actually ran it and it succeeded.
-21. If a verification step fails, fix the feature spec and rerun that step.
+21. If a verification step fails with multiple errors, diagnose and fix all of them in a single batch, then rerun that step.
 22. If a verification step cannot run because of an external dependency or environment issue you cannot resolve, mark the feature spec `[~]` in `PROGRESS.md` with the exact reason, update `## Active Work` with the blocker context, and stop the run.
 23. Do not mark `[x]` when a required verification step was skipped, failed, or could not run.
 24. Review pass rules:
@@ -107,7 +107,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
     - implemented API endpoints still match the planned request/response shapes when applicable
     - implemented UI states, interactions, and `data-testid` values still match the feature spec when applicable
 26. Check every bullet in `## Definition Of Done` one by one. Do not mark `[x]` unless each bullet can be supported by executed verification or direct file evidence.
-27. If a review pass or definition-of-done check finds an issue, fix it, rerun the affected verification, then repeat that review pass.
+27. If a review pass or definition-of-done check finds issues, fix all identified issues in a single batch, rerun the affected verification, then repeat that review pass.
 
 ## Phase 6 - Complete And Close Out
 
@@ -142,6 +142,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 - Stop on the first feature-spec registry, coverage-map, or missing-section mismatch
 - Match naming and export conventions exactly
 - Prefer existing helpers over new abstractions
+- Batch fixes for multiple failing tests or errors together instead of fixing them one by one
 - Never pause between feature specs or ask for confirmation mid-run
 - Never ask the user to rerun `/pspec.implement` to continue remaining runnable work
 - Never commit changes unless explicitly asked
