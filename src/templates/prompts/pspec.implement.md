@@ -112,16 +112,17 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 ## Phase 6 - Complete And Close Out
 
 28. Mark completion in `PROGRESS.md` immediately after all required verification and review passes succeed. Clear `## Active Work` back to `Current: None`, `Phase: idle`, and a short note about the next ready feature spec. Add a short note only when useful.
-29. Continue to the next feature spec only after the current feature spec is marked `[x]`.
-30. If another runnable feature spec remains after one is marked `[x]`, immediately start the next eligible feature spec in the same run. Do not pause to ask the user to continue.
-31. After the last feature spec, run a final closeout audit:
+29. Update the original PRD file (`.pspec/specs/<filename>.md`) to change the status of this feature in the `## Feature Breakdown` from `[PLANNED]` to `[IMPLEMENTED]`.
+30. Continue to the next feature spec only after the current feature spec is marked `[x]`.
+31. If another runnable feature spec remains after one is marked `[x]`, immediately start the next eligible feature spec in the same run. Do not pause to ask the user to continue.
+32. After the last feature spec, run a final closeout audit:
     - no `[ ]` remains in `PROGRESS.md`
     - no `[>]` remains in `PROGRESS.md`
     - no `[~]` remains in `PROGRESS.md`
     - every `AC-*` and `EC-*` in `## Coverage Map` is satisfied by one or more `[x]` feature specs
     - no placeholder text like `<...>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` remains in `PROGRESS.md` or feature spec files unless explicitly allowed
-32. Do not return `done` while any `[ ]`, `[>]`, or `[~]` remains.
-33. Return a compact result when all runnable feature specs are done:
+33. Do not return `done` while any `[ ]`, `[>]`, or `[~]` remains.
+34. Return a compact result when all runnable feature specs are done:
     - completed feature specs
     - files changed
     - verification runs and status
