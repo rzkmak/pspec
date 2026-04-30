@@ -37,10 +37,11 @@ When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec 
     - dependencies and rollout constraints do not contradict the plan
 15. If one required category is still missing, ask 1 short follow-up question and wait again. Otherwise continue.
 16. Read the saved PRD and extract every `AC-*` and `EC-*` ID. If the PRD is missing these IDs, stop and report that the PRD must be fixed before planning.
-17. Write the feature-spec directory at `.pspec/tasks/<spec-stem>/`.
-18. Create `PROGRESS.md` inside that directory. `PROGRESS.md` is the completion tracker, shared context source, and resume checkpoint for implementation.
-19. Create multiple feature spec files inside the same directory, named `<2-digit-id>-<slug>.md`.
-20. A feature spec is a cohesive implementation outcome, not a single file. One feature spec file may touch multiple production, test, config, or script files when they belong to the same change.
+17. Read the `## Feature Breakdown` from the PRD. Your goal is to plan the features marked as `[INITIALIZED]`.
+18. Write the feature-spec directory at `.pspec/tasks/<spec-stem>/`.
+19. Create `PROGRESS.md` inside that directory. `PROGRESS.md` is the completion tracker, shared context source, and resume checkpoint for implementation.
+20. Create multiple feature spec files inside the same directory, named `<2-digit-id>-<slug>.md`, mapping directly to the `[INITIALIZED]` features from the PRD breakdown.
+21. A feature spec is a cohesive implementation outcome, not a single file. One feature spec file may touch multiple production, test, config, or script files when they belong to the same change.
 21. Break work into atomic feature specs that one model can implement and verify end-to-end. Group tightly coupled files together. Split feature specs only when sequencing or review clarity improves.
 22. Tag feature specs to guide implementation intensity:
     - `TRIVIAL` = quick, low-risk work; implement with 1 review pass
@@ -94,13 +95,14 @@ When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec 
     - Other work -> include the smallest runnable end-to-end verification artifact that exercises the real flow
 41. Do not save placeholder text like `<path>`, `<cmd>`, `<outcome>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` in `PROGRESS.md` or feature spec files. If a required value is unknown, ask a follow-up instead of writing files.
 42. Before returning, audit the saved directory and fix any mismatch between `PROGRESS.md`, feature spec files, frontmatter, filenames, or the coverage map.
-43. Return:
+43. Update the original PRD file (`.pspec/specs/<filename>.md`) to change the status of the planned features in the `## Feature Breakdown` from `[INITIALIZED]` to `[PLANNED]`.
+44. Return:
     - the saved feature-spec directory path
     - the `PROGRESS.md` path
     - the feature spec file list
     - the full contents of `PROGRESS.md` and each feature spec file
     - brief sequencing notes or key risks only when useful
-44. Offer the next step as a single copy-pasteable command using the exact `PROGRESS.md` path just written: `/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md`
+45. Offer the next step as a single copy-pasteable command using the exact `PROGRESS.md` path just written: `/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md`
 
 ## Question Output
 

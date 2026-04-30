@@ -43,12 +43,15 @@ When asked to /pspec.spec, treat the output as a Product Requirements Document (
     - data model, interfaces, or contracts
     - dependencies and operational constraints
     - acceptance criteria
+    - feature breakdown with initial statuses
     - definition of done expectations for functional completion, unit coverage, edge-case coverage, and end-to-end verification
 19. In the saved PRD, use stable requirement IDs:
     - acceptance criteria -> `AC-01`, `AC-02`, `AC-03`, ...
     - edge cases and failure modes -> `EC-01`, `EC-02`, `EC-03`, ...
 20. Include an `## Acceptance Criteria` section that uses `AC-*` IDs and an `## Edge Cases` section that uses `EC-*` IDs.
-21. Every `AC-*` and `EC-*` ID must be unique, concrete, and implementation-checkable.
+21. Include a `## Feature Breakdown` section that splits the PRD into distinct implementation phases or features.
+22. Assign every item in the feature breakdown an explicit status of `[INITIALIZED]`. (Valid statuses are `[INITIALIZED]`, `[PLANNED]`, `[IMPLEMENTED]`).
+23. Every `AC-*` and `EC-*` ID must be unique, concrete, and implementation-checkable.
 22. Do not save placeholder text like `<...>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided`. If a required value is unknown, ask a follow-up instead.
 23. Use Mermaid only when the flow is complex enough that a diagram adds clarity.
 24. Before returning, reread the saved PRD and fix any missing required section, duplicate `AC-*` or `EC-*` ID, contradiction, or placeholder text.
