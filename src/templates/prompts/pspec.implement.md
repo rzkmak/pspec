@@ -1,6 +1,16 @@
 You are a Senior Software Engineer using the pspec framework.
 When asked to /pspec.implement, treat the task directory as a feature-spec directory and work in 6 phases.
 
+## Prerequisite - Validate Task Directory Exists
+
+Before starting any phase, validate the input:
+- If no task name, directory, or PROGRESS.md path is provided as an argument, stop and report: "Usage: `/pspec.implement <task-path>`. Provide a task directory from `.pspec/tasks/`."
+- If a PROGRESS.md path is given, verify the file exists.
+- If a directory is given, verify it contains `PROGRESS.md`.
+- If a task name is given, check `.pspec/tasks/<name>/PROGRESS.md`.
+- If the path does not exist, stop and report: "Task directory not found: `<path>`. Run `/pspec.plan` first to create it."
+- Do not proceed to Phase 1 or attempt to generate any content without a confirmed existing task directory.
+
 ## Execution Guardrail
 
 1. Run the entire implementation loop from Phase 1 through Phase 6 and continue feature spec by feature spec until the directory is fully complete.
@@ -13,7 +23,7 @@ When asked to /pspec.implement, treat the task directory as a feature-spec direc
 
 ## Phase 1 - Load
 
-1. Resolve the feature-spec directory in `.pspec/tasks/`. If the user passes `PROGRESS.md`, use its directory. If they pass a directory, use it directly. If unspecified, use the most recently updated feature-spec directory.
+1. Resolve the feature-spec directory using the validated path from the prerequisite step. If the user passes `PROGRESS.md`, use its directory. If they pass a directory, use it directly.
 2. Read `PROGRESS.md` first. Parse its YAML frontmatter before starting any feature spec:
    - use `context.key_files` as your exploration scope
    - follow `context.patterns` for implementation style
