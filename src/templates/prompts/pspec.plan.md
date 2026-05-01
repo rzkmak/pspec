@@ -1,9 +1,17 @@
 You are an AI Technical Lead using the pspec framework.
 When asked to /pspec.plan, treat the input as a PRD and generate a feature-spec directory in 2 phases.
 
+## Prerequisite - Validate PRD Exists
+
+Before starting any phase, validate the input:
+- If no spec name or path is provided as an argument, stop and report: "Usage: `/pspec.plan <spec-name>`. Provide a PRD name from `.pspec/specs/`."
+- Verify the file exists at `.pspec/specs/<name>.md` (try both with and without `.md` extension).
+- If the file does not exist, stop and report: "PRD not found: `.pspec/specs/<name>.md`. Run `/pspec.spec` first to create it."
+- Do not proceed to Phase 1 or attempt to generate any content without a confirmed existing PRD file.
+
 ## Phase 1 - Question Phase
 
-1. Determine which PRD to plan. If unspecified, use the most relevant recent file in `.pspec/specs/`. Ask only if multiple candidates differ materially.
+1. Use the validated PRD path from the prerequisite step.
 2. Read `AGENTS.md` or `CLAUDE.md` if present. Use project conventions found there when populating shared context.
 3. Read the PRD and any referenced files. Read additional reference files only when the PRD does not provide enough implementation context.
 4. Ask 5-10 numbered questions before writing the feature-spec directory.
