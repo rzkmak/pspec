@@ -151,44 +151,60 @@ End-to-end verification rules:
 
 ### 5. Implementation Loop
 
-`/pspec.implement` is serial and review-heavy.
+`/pspec.implement` uses an orchestrator/subagent pattern to reduce context compaction on the main thread.
 
-It must finish the full run whenever work remains runnable. It should not stop mid-run to hand back a todo list, checkpoint, or next-steps handoff when it can still diagnose, fix, verify, and continue itself.
+The orchestrator coordinates subagents. It does not implement feature specs directly. It must finish the full run whenever work remains runnable. It should not stop mid-run to hand back a todo list, checkpoint, or next-steps handoff when it can still dispatch a subagent.
 
-It must not tell the user to run `/pspec.implement` again to continue remaining runnable work. After one feature spec is complete, it should immediately continue to the next eligible feature spec in the same run.
+It must not tell the user to run `/pspec.implement` again to continue remaining runnable work. After one feature spec is complete, it should immediately dispatch a subagent for the next eligible feature spec.
 
-Flow:
+**Orchestrator flow:**
 1. Read `PROGRESS.md`
 2. Read the source spec and extract all `AC-*` and `EC-*` IDs
 3. Audit feature spec files, `PROGRESS.md`, and the coverage map for parity
-4. Execute feature specs in `id` order
-5. Read each feature spec's reference files before editing
-6. Implement the described outcome
-7. Audit planned files, data model, API/UI contracts, and required artifacts
-8. Run base-case verification, unit tests, edge-case checks, and the end-to-end artifact
-9. Perform the required number of review passes: `TRIVIAL` = 1, `CRITICAL` = 2
-10. Check every `Definition Of Done` bullet with evidence
-11. If review finds problems, diagnose all identified errors, fix them in a single batch, and repeat the affected verification and review pass
-12. Mark the feature spec complete in `PROGRESS.md`
-13. Run a final closeout audit before returning done
+4. Determine the next eligible feature spec (lowest-id `[ ]` whose `depends_on` are all `[x]`, or resume an existing `[>]`)
+5. Spawn a subagent with a task prompt containing the worker instructions, feature spec path, `PROGRESS.md` path, and project context references
+6. Wait for the subagent to return, then read `PROGRESS.md` from disk to validate the handoff:
+   - `[x]` → subagent succeeded, dispatch next eligible feature spec
+   - `[>]` still present → subagent failed to complete, report blocker
+   - `[~]` → feature spec blocked, check if other feature specs are eligible
+7. If another eligible feature spec remains, immediately spawn a subagent for it
+8. After all feature specs are dispatched and completed (or blocked), run a final closeout audit
 
-Resume guardrails:
-- `PROGRESS.md` is the resumable source of truth, not just a final checklist
+**Worker (subagent) flow per feature spec:**
+1. Read `PROGRESS.md`, project context, the PRD, and the assigned feature spec file
+2. Mark the feature spec `[>]` in `PROGRESS.md` and update `## Active Work`
+3. Read reference files, then implement the described outcome
+4. Audit planned files, data model, API/UI contracts, and required artifacts
+5. Run base-case verification, unit tests, edge-case checks, and the end-to-end artifact
+6. Perform the required number of review passes: `TRIVIAL` = 1, `CRITICAL` = 2
+7. Check every `Definition Of Done` bullet with evidence
+8. If review finds problems, diagnose all identified errors, fix them in a single batch, and repeat the affected verification and review pass
+9. Mark the feature spec `[x]` in `PROGRESS.md`, clear `## Active Work`, and return result to the orchestrator
+
+**Subagent lifecycle guardrails:**
+- Only one subagent is active at a time; wait for each to return before spawning the next
+- After a subagent returns, the orchestrator reads `PROGRESS.md` from disk to confirm the expected state change before proceeding
+- If `PROGRESS.md` fails to reflect the state change, the orchestrator stops and reports the inconsistency
+- The orchestrator never carries stale context between subagent dispatches — it reads `PROGRESS.md` fresh from disk
+- Never leave a subagent running after it has returned
+
+**Resume guardrails:**
+- `PROGRESS.md` is the resumable write-ahead log and the handoff contract between orchestrator and subagents
 - mark the active feature spec `[>]` before code edits begin
 - keep `## Active Work` updated with the current feature spec, current phase, and next resume step at major checkpoints
 - if a session is interrupted, resume the existing `[>]` feature spec before starting a new `[ ]` item
 - never leave more than one `[>]` entry in `PROGRESS.md`
 
-Implementation is one feature spec file at a time. Do not batch feature specs.
+Implementation is one feature spec per subagent. Do not batch feature specs.
 
-Truthfulness rule:
+**Truthfulness rule:**
 - never claim a verification step passed unless it was actually run and succeeded
 - if a required section is missing, stop and report it instead of guessing
 - if a required verification step cannot run because of environment or external dependency issues, mark the task blocked
 - do not return done while any `[ ]`, `[>]`, or `[~]` remains in `PROGRESS.md`
 - do not ignore task-registry or coverage-map mismatches
-- use `partial` only when the current run completed at least one additional feature spec before an explicit blocker stopped it
-- use `blocked` only when the current run could not complete any additional feature spec because an explicit blocker stopped it
+- use `partial` only when at least one feature spec completed but another is `[~]` blocked
+- use `blocked` only when no feature spec could complete because every eligible one hit an explicit blocker
 - never use `partial` or `blocked` for a voluntary mid-run handoff
 - never ask the user to rerun `/pspec.implement` while runnable work still remains
 
