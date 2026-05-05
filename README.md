@@ -70,19 +70,20 @@ Use `/pspec.spec` to draft a PRD.
 - It only pauses again for one short follow-up question when required product input is still missing.
 - The resulting PRD is written to `.pspec/specs/<epoch-ms>-<slug>.md`.
 
-The PRD should cover:
-- product goal and context
-- user problem and success outcome
-- base flow
-- edge cases and failure modes
-- interfaces, contracts, or data shape
-- constraints and dependencies
-- acceptance criteria
-- definition of done expectations
+The PRD uses a structured format with typed sections:
 
-The final PRD should use stable IDs:
+- `## Intent` — what this builds, why, for whom, success outcome
+- `## Flow` — ordered steps in the base case
+- `## Acceptance Criteria` — `AC-*` IDs with concrete testable statements
+- `## Edge Cases` — `EC-*` IDs with `→` cause-effect syntax
+- `## Constraints` — non-negotiable technical or product constraints
+- `## Features` — `F-*` IDs for traceability to plan phase
+- `## Done` — checklist with `[ ]` boxes
+
+Stable IDs:
 - `AC-01`, `AC-02`, ... for acceptance criteria
-- `EC-01`, `EC-02`, ... for edge cases and failure modes
+- `EC-01`, `EC-02`, ... for edge cases (each with `→` expected behavior)
+- `F01`, `F02`, ... for features
 
 ### Step 3: Create a Feature Spec Directory
 
@@ -106,12 +107,20 @@ Each feature-spec directory contains:
 - one Markdown file per feature spec, such as `01-create-auth-types.md`
 
 Feature specs are outcome-based, not file-based. One feature spec can cover multiple production files, tests, scripts, and config changes when they belong to one coherent unit of work.
-The planner must also include a coverage map so every `AC-*` and `EC-*` from the PRD is assigned to one or more feature specs.
+The planner must include a Coverage table so every `AC-*` and `EC-*` from the PRD is assigned to one or more feature specs.
 
-Each feature spec should define these guardrail sections up front:
-- Data model involved
-- For API work: all endpoints with request and response shapes
-- For web work: all UI states, all user interactions and outcomes, and `data-testid` values to use in both code and tests
+Each feature spec has 6 required sections plus structured execution blocks:
+- `## Contracts` — typed tables (Data, API, UI) defining all entities, endpoints, and UI states up front
+- `## Files` — create/modify/reference actions with paths
+- `## Actions` — `action` blocks with id, tool, args, dependencies, conditions
+- `## Decisions` — `decision` blocks with options, validation, and normalization for user choices
+- `## Validates` — `validate` blocks with tool, args, expected outcomes
+- `## Done` — checklist with `[ ]` boxes that agents must tick with evidence
+
+Feature specs also contain three required execution blocks:
+- `config` — spec identity, tools, environment, defaults
+- `allowlist` — tool-call constraints (permitted commands and paths)
+- `state` — execution progress tracking (completed, failed, decisions, artifacts)
 
 ### Feature Spec Directory Format
 
@@ -139,36 +148,39 @@ context:
 
 # Progress
 
-## Status Keys
-- `[ ]` not started
-- `[>]` in progress
-- `[x]` complete
-- `[~]` blocked
+## Registry
 
-## Coverage Map
-- `AC-01` -> `01-model-and-service.md`
-- `EC-01` -> `01-model-and-service.md`, `02-http-endpoints.md`
+| ID | File | Title | Tag | Status | Depends |
+|----|------|-------|-----|--------|---------|
+| 01 | 01-model-and-service.md | Add auth domain model and service | CRITICAL | done | — |
+| 02 | 02-http-endpoints.md | Add login and logout endpoints | CRITICAL | active | 01 |
+| 03 | 03-web-verification.md | Add UI states, test IDs, and E2E verification | TRIVIAL | pending | 01, 02 |
 
-## Feature Specs
-- [ ] `01-model-and-service.md` - Add auth domain model and service flow
-- [ ] `02-http-endpoints.md` - Add login and logout endpoints
-- [ ] `03-web-verification.md` - Add UI states, test IDs, and end-to-end verification
+## Coverage
 
-## Active Work
-- Current: `None`
-- Phase: `idle`
-- Resume: `Start with the next [ ] feature spec in numeric order.`
+| Requirement | Specs |
+|-------------|-------|
+| AC-01 | 01, 02 |
+| EC-01 | 01 |
+
+## Active
+
+- Spec: `02-http-endpoints.md`
+- Phase: `W2-Implement`
+- Resume: `Implement login failure paths + unit tests`
+- Updated: 2026-04-27T14:30:00Z
 
 ## Notes
 - Complete tasks in numeric order unless a dependency note says otherwise.
-- Mark a feature spec `[>]` and update `## Active Work` before editing code so interrupted runs can resume cleanly.
+- Mark a feature spec `active` and update `## Active` before editing code so interrupted runs can resume cleanly.
 - A task is done only when its definition of done passes.
 ```
 
-Each feature spec file contains its own frontmatter and execution details:
+Each feature spec file has 6 required sections with typed tables and execution blocks:
 
-```md
+````md
 ---
+kind: feature
 id: 1
 title: Add auth domain model and service flow
 tag: CRITICAL
@@ -176,85 +188,164 @@ spec_ref:
   - "AC-03"
   - "EC-02"
 depends_on: []
+feature_ref: F01
 ---
 
 # Goal
 Deliver the core login/logout domain logic and shared auth types.
 
-## Requirement Coverage
-- `AC-03` - Adds the core auth flow behavior
-- `EC-02` - Covers invalid credentials and locked-account behavior
+```config
+name: add-session-auth
+version: 1.0.0
+description: Add session-based authentication to the admin dashboard
+environment:
+  NODE_ENV: test
+defaults:
+  retry: 2
+  timeout: 30000
+tools:
+  - run_command
+  - read_file
+  - write_file
+  - ask_user
+```
+
+```allowlist
+safe-commands:
+  tool: run_command
+  allow:
+    - "npm test*"
+    - "npm run db:migrate*"
+    - "bash scripts/*"
+src-paths:
+  tool: write_file
+  allow:
+    - "src/**"
+    - "scripts/*"
+    - "test/**"
+```
+
+## Contracts
+
+### Data
+| Entity | Fields | Notes |
+|--------|--------|-------|
+| AuthSession | id, userId, createdAt, expiresAt | TTL-indexed |
+
+### API
+| Method | Path | Request | Response | Status |
+|--------|------|---------|----------|--------|
+| POST | /api/auth/login | {email, password} | {user, sessionId} | 200|401 |
 
 ## Files
-### Create
-- `src/auth/service.ts` - Core authentication service
-- `src/auth/service.test.ts` - Unit coverage for the service
+| Action | Path | Description |
+|--------|------|-------------|
+| create | src/auth/service.ts | Core auth service |
+| create | src/auth/service.test.ts | Unit tests |
+| create | src/auth/types.ts | Add AuthSession type |
+| ref | src/users/service.ts | Pattern reference |
 
-### Modify
-- `src/auth/types.ts` - Shared auth contracts
+## Actions
 
-### Reference
-- `src/users/service.ts` - Existing service structure
-
-## Data Model
-- `AuthSession` with session id, user id, created at, expires at
-- `LoginInput` with email and password
-
-## API Contracts
-- Endpoint: `POST /api/auth/login`
-  - Request: `{ email: string, password: string }`
-  - Response: `{ user: { id: string, email: string }, sessionId: string }`
-
-## UI States
-- Not applicable
-
-## User Interactions
-- Not applicable
-
-## Data Test IDs
-- Not applicable
-
-## Edge Cases
-- Invalid password
-- Unknown email
-- Locked account
-- Session store failure
-
-## Approach
-1. Add the auth service and shared types.
-2. Implement success and failure paths.
-3. Add unit tests for the base case and listed edge cases.
-4. Hook the service into the verification artifact if needed.
-
-## Verification
-- Base case:
-  - Command: `npm test -- auth/service.test.ts`
-  - Expected: successful login path passes
-- Unit tests:
-  - Command: `npm test -- auth/service.test.ts`
-  - Expected: base and failure-path assertions pass
-- Edge cases:
-  - Command: `npm test -- auth/service.test.ts`
-  - Expected: invalid credentials, locked account, and store failure cases pass
-- E2E:
-  - Type: `api-script`
-  - Path: `scripts/verify-auth-flow.sh`
-  - Command: `bash scripts/verify-auth-flow.sh`
-  - Expected: login and logout flow succeeds against the running app
-
-## Definition Of Done
-- Functional behavior is finished.
-- Unit tests cover the base case and listed edge cases.
-- Failure modes are implemented and verified.
-- The end-to-end verification artifact runs successfully.
+```action
+id: setup-schema
+description: Create the auth database schema
+tool: run_command
+args:
+  command: "npm run db:migrate -- --name add-auth-tables"
+depends_on: []
+retry: 1
+on_failure: abort
 ```
+
+```action
+id: create-model
+description: Create the auth model and service
+tool: write_file
+args:
+  path: "src/auth/model.ts"
+  strategy: "{{decisions.auth_strategy}}"
+depends_on: [setup-schema]
+```
+
+## Decisions
+
+```decision
+id: auth_strategy
+question: "Which authentication strategy?"
+options:
+  - label: "Session-based"
+    value: session
+  - label: "JWT"
+    value: jwt
+allow_other: true
+other_validation:
+  type: regex
+  pattern: "^[a-z][a-z0-9-]*$"
+  message: "Must be lowercase kebab-case"
+other_normalize:
+  to: slug
+```
+
+## Validates
+
+```validate
+id: check-base
+name: Base case — successful login
+tool: run_command
+args:
+  command: "npm test -- auth/service.test.ts"
+depends_on: [create-model]
+expect: "all tests pass"
+type: base
+```
+
+```validate
+id: check-edges
+name: Edge cases — invalid credentials and locked accounts
+tool: run_command
+args:
+  command: "npm test -- auth/service.test.ts -- --grep 'invalid|locked|expired'"
+depends_on: [create-model]
+expect: "edge-case tests pass"
+type: edges
+```
+
+```validate
+id: check-e2e
+name: E2E — login→logout cycle
+tool: run_command
+args:
+  command: "bash scripts/verify-auth-flow.sh"
+depends_on: [create-model]
+expect: "login→logout cycle succeeds"
+type: e2e
+```
+
+```state
+status: idle
+completed: []
+failed: []
+decisions: {}
+artifacts: {}
+current_action: null
+started_at: null
+finished_at: null
+```
+
+## Done
+- [ ] Functional behavior works
+- [ ] Unit tests pass (base + edges)
+- [ ] All spec_ref IDs addressed in code
+- [ ] E2E artifact runs successfully
+````
 
 ### Definition Of Done
 
-Every task must define and satisfy all of the following:
+Every task must define and satisfy a Done checklist:
 - functional behavior is finished
 - unit tests are added or updated
-- edge cases are implemented and verified
+- all spec_ref IDs are addressed in code
 - an end-to-end verification artifact is provided
 
 End-to-end verification artifact rules:
@@ -271,10 +362,10 @@ Use `/pspec.audit` when the PRD changed after planning, when feature spec files 
 ```
 
 - The agent reads `PROGRESS.md` and the linked PRD.
-- It audits the feature-spec registry, coverage map, and required feature-spec sections.
+- It audits the Registry, Coverage table, and required feature-spec sections.
 - It syncs planning artifacts when the PRD changed.
 - It preserves valid completed feature specs when possible.
-- It can downgrade stale completed items back to `[ ]` when requirement coverage changed materially.
+- It can downgrade stale completed items back to `pending` when requirement coverage changed materially.
 - It does not change product code, tests, or runtime configuration. It only updates `PROGRESS.md` and feature spec files.
 
 ### Step 5: Implement The Feature Specs
@@ -286,17 +377,17 @@ Use `/pspec.implement` with the feature-spec directory or `PROGRESS.md` path.
 ```
 
 - The agent reads `PROGRESS.md` first.
-- It reads the linked PRD and checks that every `AC-*` and `EC-*` in the coverage map is valid.
-- It audits that `PROGRESS.md` and the real feature spec files match before starting work.
+- It reads the linked PRD and checks that every `AC-*` and `EC-*` in the Coverage table is valid.
+- It audits that the Registry and the real feature spec files match before starting work.
 - It executes feature specs in order, respecting dependencies.
 - It processes one feature spec file at a time.
-- It treats `PROGRESS.md` as a resumable checkpoint and resumes any existing `[>]` feature spec before new work.
-- It keeps `## Active Work` updated with the current feature spec, phase, and next resume step.
+- It treats `PROGRESS.md` as a resumable checkpoint and resumes any existing `active` feature spec before new work.
+- It keeps `## Active` updated with the current feature spec, phase, and next resume step.
 - It keeps running the full implementation loop until every runnable feature spec is complete or the run is explicitly blocked.
 - It does not hand back a mid-run todo list, checkpoint, or next-steps handoff when it can still make progress itself.
 - It must not tell the user to run `/pspec.implement` again to continue remaining runnable feature specs.
 - After one feature spec is marked complete, it immediately starts the next eligible feature spec in the same run.
-- `done` means the final closeout audit passed and no `[ ]`, `[>]`, or `[~]` remains.
+- `done` means the final closeout audit passed and no `pending`, `active`, or `blocked` rows remain.
 - `partial` means the current run completed at least one additional feature spec before an explicit blocker stopped it.
 - `blocked` means the current run could not complete any additional feature spec because an explicit blocker stopped it.
 - It must not use `partial` or `blocked` for a voluntary mid-run handoff.
@@ -310,18 +401,17 @@ The self-review must check:
 - no planned work was skipped
 - no unresolved `TODO`, `FIXME`, placeholder, or follow-up markers remain unless explicitly allowed
 - unit tests and end-to-end verification still match the implemented behavior
-- implemented API endpoints still match the planned request and response shapes when applicable
-- implemented UI states, interactions, and `data-testid` values still match the feature spec when applicable
+- implemented API endpoints still match the planned Contracts table when applicable
+- implemented UI states and `data-testid` values still match the Contracts table when applicable
 
 If review finds issues, the agent fixes them, reruns verification, and reviews again before checking the task off in `PROGRESS.md`.
 
 Truthfulness rules:
 - the agent must not claim a verification step passed unless it actually ran and succeeded
 - if a feature spec file is missing a required section, the agent should stop and report the first missing section instead of guessing
-- if a required verification step cannot run because of an external dependency or environment issue, the feature spec should be marked blocked
-- it should not mark a feature spec complete until every planned file, verification artifact, API/UI contract, and definition-of-done bullet is accounted for
-- it must not return `done` while any `[ ]`, `[>]`, or `[~]` remains in `PROGRESS.md`
-- it must not use `partial` or `blocked` for a voluntary mid-run handoff
+- if a required verification step cannot run because of an external dependency or environment issue, the feature spec should be marked `blocked`
+- it should not mark a feature spec complete until every planned file, verification artifact, contract, and done checkbox is accounted for
+- it must not return `done` while any `pending` or `active` row remains in the Registry
 
 ### Step 6: Debugging
 
@@ -397,15 +487,21 @@ your-project/
 
 ## Execution Model
 
-pspec now favors serial, complete execution over orchestration features.
+pspec uses step-indexed protocols for determinism and structured blocks for machine-parseable execution.
 
-1. `/pspec.spec` asks focused questions, collects answers, then completes the PRD draft in one pass once the answers are sufficient.
-2. `/pspec.plan` asks focused questions first, then completes the feature-spec directory in one pass with `PROGRESS.md`, one file per feature, and a coverage map for every `AC-*` and `EC-*` requirement.
-3. `/pspec.audit` audits and syncs the feature-spec directory against the PRD without changing product code.
-4. `/pspec.implement` reads `PROGRESS.md`, audits the feature-spec registry and coverage map, executes one feature spec file at a time, verifies the base case and edge cases, runs unit tests and the end-to-end artifact, checks API/UI contract fidelity, checks every definition-of-done bullet, keeps going until every runnable feature spec is complete or the run is explicitly blocked, and only then marks completion.
-5. `/pspec.debug` works through likely causes serially and keeps active task directories in sync.
+1. `/pspec.spec` asks focused questions, collects answers, then completes the PRD draft in one pass with a save-time checklist.
+2. `/pspec.plan` asks focused questions first, then completes the feature-spec directory in one pass with a Registry table, Coverage table, and save-time checklist. Feature specs include `config`, `allowlist`, `state`, `action`, `decision`, and `validate` blocks.
+3. `/pspec.audit` audits and syncs the feature-spec directory against the PRD without changing product code. Validates block structure in addition to parity checks.
+4. `/pspec.implement` follows an orchestrator protocol (S1-S7) that reads PROGRESS.md, refreshes frontmatter context from CONTEXT.md and AGENTS.md, audits the Registry and Coverage, dispatches one subagent per feature spec via the worker protocol (W1-W6). The worker reads CONTEXT.md fresh from disk, parses blocks, resolves decisions via `ask_user`, checks allowlists, executes actions in topological order, runs validates, and updates state.
+5. `/pspec.debug` works through likely causes serially and keeps Active in PROGRESS.md and the state block in sync.
 
-This keeps the workflow explicit and reviewable without adding orchestration-specific structures to your project.
+**Block execution order:** Parse → Validate structure → Check allowlists → Resolve decisions (ask_user) → Topological sort actions → Execute actions → Run validates (base → edges → e2e).
+
+**Decision resolution:** Present options via `ask_user`. If "Other" is selected, validate with `other_validation` (regex/enum/length), normalize with `other_normalize` (slug/lower/raw), store in `state.decisions`.
+
+**Allowlist enforcement:** Deny-by-default. If an allowlist entry exists for a tool, action args must match at least one pattern.
+
+**Context freshness:** Every command reads `.pspec/CONTEXT.md` fresh from disk. The orchestrator refreshes PROGRESS.md frontmatter context at S1 before dispatching workers. Workers re-read CONTEXT.md and AGENTS.md at W1. Frontmatter context is advisory — workers must not rely on it as sole truth.
 
 ---
 

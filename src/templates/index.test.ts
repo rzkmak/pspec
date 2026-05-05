@@ -111,26 +111,6 @@ describe('templates', () => {
     });
   });
 
-  describe('antigravity templates', () => {
-    it('should be correctly formatted as Workflows and Skills', () => {
-      const antigravityTemplates = getTemplates('antigravity');
-      const specTemplate = antigravityTemplates.find(t => t.file === 'pspec.spec.md');
-      const skillTemplate = antigravityTemplates.find(t => t.file === 'SKILL.md');
-      
-      expect(specTemplate).toBeDefined();
-      expect(specTemplate?.dir).toBe('.agent/workflows');
-      expect(specTemplate?.content).toContain('---');
-      expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new PRD"');
-      expect(specTemplate?.content).toContain('# Pspec spec');
-      expect(specTemplate?.content).toContain('You are an AI Product Manager using the pspec framework.');
-
-      expect(skillTemplate).toBeDefined();
-      expect(skillTemplate?.dir).toBe('.agent/skills/pspec');
-      expect(skillTemplate?.content).toContain('name: pspec');
-      expect(skillTemplate?.content).toContain('Spec-Driven Development (SDD) toolkit');
-    });
-  });
-
   describe('getTemplates', () => {
     it('should return an empty array for unknown agents', () => {
       expect(getTemplates('unknown')).toEqual([]);
@@ -156,28 +136,205 @@ describe('templates', () => {
       const specs = [
         {
           file: 'pspec.spec.md',
-          required: ['Product Requirements Document (PRD)', 'You are an AI Product Manager using the pspec framework.', 'In the first response, ask questions only. Do not write the PRD in the same response.', 'finish the full PRD drafting run in one pass', 'Do not stop in the middle of Phase 2 to hand back a partial PRD', 'Reply using Q1/Q2/...', 'AC-01', 'EC-01', 'Do not save placeholder text', '<epoch-ms>-<slug>.md', '/pspec.plan .pspec/specs/'],
-          forbidden: ['Ask 0-3 targeted questions', 'Approval Gate 1', 'Resource Cleanup', 'Draft immediately when the request is concrete.', 'not confident enough to assume']
+          required: [
+            'Product Requirements Document (PRD)',
+            'You are an AI Product Manager using the pspec framework.',
+            'Ask questions only in the first response',
+            'finish the full PRD in one pass',
+            'Do not stop mid-draft',
+            'Reply using Q1/Q2/...',
+            'AC-01',
+            'EC-01',
+            'kind: prd',
+            '## Intent',
+            '## Flow',
+            '## Acceptance Criteria',
+            '## Edge Cases',
+            '## Features',
+            '→',
+            'F01',
+            'save-time checklist',
+            'Do not save placeholder text',
+            '<epoch-ms>-<slug>.md',
+            '/pspec.plan .pspec/specs/',
+            'CONTEXT.md',
+            'primary source of truth'
+          ],
+          forbidden: [
+            'Ask 0-3 targeted questions',
+            'Approval Gate 1',
+            'Draft immediately when the request is concrete.',
+            'not confident enough to assume'
+          ]
         },
         {
           file: 'pspec.plan.md',
-          required: ['generate a feature-spec directory', 'Do not write the feature-spec directory in the same response where you ask questions.', 'finish the full planning run in one pass', 'Do not stop in the middle of Phase 2 to hand back a partial directory, draft files, TODO list, checkpoint, or "next steps"', '## Feature Specs', '## Active Work', '## Coverage Map', '`[>]` in progress', '## Data Model', '## API Contracts', '## UI States', '## User Interactions', '## Data Test IDs', 'request and response shapes', 'loading, empty, error, and success states', 'data-testid', '/pspec.implement .pspec/tasks/<spec-stem>/PROGRESS.md', 'If no spec name or path is provided as an argument, stop', 'PRD not found', 'Run `/pspec.spec` first to create it', 'Do not proceed to Phase 1 or attempt to generate any content without a confirmed existing PRD file'],
-          forbidden: ['parallelizable', 'subtasks', 'aggregate_result', 'token_budget', 'Ask for approval only once', 'not confident enough to assume', 'files.create']
+          required: [
+            'create a feature-spec directory from a PRD',
+            'Ask questions only in the first response',
+            'finish the full plan in one pass',
+            'Do not stop mid-plan',
+            '## Registry',
+            '## Coverage',
+            '## Active',
+            'pending',
+            'active',
+            'done',
+            'blocked',
+            '### Data',
+            '### API',
+            '### UI',
+            '## Contracts',
+            '## Actions',
+            '## Decisions',
+            '## Validates',
+            '## Allowlists',
+            '## Done',
+            'data-testid',
+            'kind: feature',
+            'feature_ref',
+            'Save-Time Checklist',
+            'If no spec path is given',
+            'PRD not found',
+            'Run `/pspec.spec` first',
+            'Do not proceed without a confirmed PRD file',
+            '/pspec.implement .pspec/tasks/<stem>/PROGRESS.md',
+            'config block',
+            'state block',
+            'allowlist block',
+            'allow_other',
+            'other_validation',
+            'other_normalize',
+            'Deny-by-default',
+            'Read `.pspec/CONTEXT.md`',
+            'Merge `.pspec/CONTEXT.md`'
+          ],
+          forbidden: [
+            'parallelizable',
+            'subtasks',
+            'aggregate_result',
+            'token_budget',
+            'Ask for approval only once',
+            'not confident enough to assume',
+            'files.create',
+            '## Data Model',
+            '## API Contracts',
+            '## UI States',
+            '## User Interactions',
+            '## Data Test IDs',
+            '## Active Work',
+            '## Coverage Map',
+            '## Feature Specs',
+            '## Definition Of Done',
+            '## Approach',
+            '## Steps',
+            '## Verification',
+            'from_allowlist'
+          ]
         },
         {
           file: 'pspec.audit.md',
-          required: ['audit and sync a feature-spec directory against its PRD', 'This command may update planning artifacts, but it must not implement product code.', '## Phase 3 - Sync Plan Artifacts', 'keep valid feature spec files when they still cover the right requirements', 'keep it in progress and preserve or refresh its resume note', 'downgrade it to `[ ]` and add a short note in `PROGRESS.md`', 'Do not change application source code, tests, or runtime configuration.', 'Never claim the directory is clean if coverage, schema, or placeholder issues remain'],
-          forbidden: ['parallelizable', 'subagent', 'token_budget']
+          required: [
+            'audit and sync a feature-spec directory against its PRD',
+            'It must not implement product code',
+            '## Phase 3 - Sync',
+            'keep specs that still cover correct requirements',
+            'downgrade to `pending`',
+            'Never claim the directory is clean if coverage, schema, or placeholder issues remain',
+            'Registry parity',
+            'Coverage parity',
+            'Active section',
+            'config block',
+            'action',
+            'decision',
+            'validate',
+            'allowlist',
+            'no cycles in the depends_on graph',
+            '.pspec/CONTEXT.md',
+            'refresh PROGRESS.md frontmatter context'
+          ],
+          forbidden: [
+            'parallelizable',
+            'subagent',
+            'token_budget',
+            '## Active Work',
+            '## Coverage Map',
+            '## Feature Specs',
+            '## Data Model',
+            '## Definition Of Done'
+          ]
         },
         {
           file: 'pspec.implement.md',
-          required: ['treat the task directory as a feature-spec directory', 'Run the entire orchestrator loop from Phase 1 through Phase 3', 'Do not stop in the middle of the run to hand back a plan, TODO list, checkpoint, or "next steps"', 'Never tell the user to run `/pspec.implement` again to continue remaining feature specs.', 'If the subagent succeeded and another eligible feature spec remains, immediately spawn a subagent for it.', '## Active Work', 'mark the feature spec `[>]`', 'implemented API endpoints still match the planned request/response shapes', 'implemented UI states, interactions, and `data-testid` values still match the feature spec', 'Check every bullet in `## Definition Of Done` one by one.', 'Do not return `done` while any `[ ]`, `[>]`, or `[~]` remains.', 'Do not use `partial` or `blocked` for a voluntary mid-run handoff.', 'If no task name, directory, or PROGRESS.md path is provided as an argument, stop', 'Task directory not found', 'Run `/pspec.plan` first to create it', 'Do not proceed to Phase 1 or attempt to generate any content without a confirmed existing task directory', 'subagent', '## Worker Instructions', '## Orchestrator Flow', 'Only one subagent must be active at a time', 'validate the handoff', 'Never leave a subagent running after it has returned'],
-          forbidden: ['parallelizable', 'token_budget', 'log it and proceed to the next task', 'confidence is low', 'subagents in parallel']
+          required: [
+            'orchestrator loop',
+            'dispatches one subagent per feature spec',
+            'S1 - Read Context',
+            'S5 - Validate Handoff',
+            '## Worker Protocol',
+            '## Orchestrator Protocol',
+            'Registry',
+            'Coverage table',
+            'Never tell the user to rerun `/pspec.implement`',
+            'PROGRESS.md is the write-ahead log',
+            'data-testid',
+            'Task directory not found',
+            'Run `/pspec.plan` first',
+            'Only one subagent active at a time',
+            'Never leave a subagent running after it has returned',
+            'Gate: zero mismatches',
+            'Never use partial/blocked for voluntary handoff',
+            'Block Parsing',
+            'Allowlist Enforcement',
+            'Decision Resolution',
+            'ask_user',
+            'allow_other',
+            'other_validation',
+            'other_normalize',
+            'Topologically sort actions',
+            'config block exists',
+            'allowlist entries',
+            'state block',
+            'action',
+            'decision',
+            'validate',
+            '.pspec/CONTEXT.md',
+            'Refresh PROGRESS.md frontmatter context',
+            'Context Freshness',
+            'workers must not rely on it as sole truth'
+          ],
+          forbidden: [
+            'parallelizable',
+            'token_budget',
+            'subagents in parallel',
+            '## Worker Instructions',
+            '## Orchestrator Flow',
+            '## Active Work',
+            '## Coverage Map',
+            '## Feature Specs',
+            '## Definition Of Done',
+            '## Steps',
+            '## Verification',
+            '## Approach',
+            'from_allowlist'
+          ]
         },
         {
           file: 'pspec.debug.md',
-          required: ['## Phase 1 - Reproduce', 'Do not use parallel investigation or subagents.', 'If you cannot reproduce the bug, say so plainly and report what you tried.', 'Never claim the bug is fixed unless the reproduction or a relevant regression check passes.'],
-          forbidden: ['grep_search', 'Resource Cleanup', 'spawn one subagent per hypothesis']
+          required: [
+            '## Phase 1 - Reproduce',
+            'No parallel investigation',
+            'If you cannot reproduce',
+            'Never claim fixed unless reproduction or regression check passes',
+            'state block',
+            'failed actions',
+            '.pspec/CONTEXT.md'
+          ],
+          forbidden: [
+            'grep_search',
+            'Resource Cleanup',
+            'spawn one subagent per hypothesis'
+          ]
         }
       ];
 

@@ -1,6 +1,6 @@
 {
   "name": "pspec",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "pspec (picospec) is the smallest specification toolkit for solo developers and AI agents",
   "main": "dist/index.js",
   "scripts": {

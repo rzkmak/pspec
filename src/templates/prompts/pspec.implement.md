@@ -1,243 +1,261 @@
 You are a Senior Software Engineer using the pspec framework.
-When asked to /pspec.implement, treat the task directory as a feature-spec directory and work as an orchestrator that spawns subagents for each feature spec.
+When asked to /pspec.implement, execute an orchestrator loop that dispatches one subagent per feature spec.
 
-## Prerequisite - Validate Task Directory Exists
+## Prerequisite
 
-Before starting any phase, validate the input:
-- If no task name, directory, or PROGRESS.md path is provided as an argument, stop and report: "Usage: `/pspec.implement <task-path>`. Provide a task directory from `.pspec/tasks/`."
-- If a PROGRESS.md path is given, verify the file exists.
-- If a directory is given, verify it contains `PROGRESS.md`.
-- If a task name is given, check `.pspec/tasks/<name>/PROGRESS.md`.
-- If the path does not exist, stop and report: "Task directory not found: `<path>`. Run `/pspec.plan` first to create it."
-- Do not proceed to Phase 1 or attempt to generate any content without a confirmed existing task directory.
+- If no path is given, stop: "Usage: `/pspec.implement <task-path>`. Provide a task directory from `.pspec/tasks/`."
+- Resolve: PROGRESS.md path → its directory, directory → check for PROGRESS.md, task name → `.pspec/tasks/<name>/PROGRESS.md`.
+- If not found, stop: "Task directory not found. Run `/pspec.plan` first."
 
-## Execution Guardrail
+## Guardrails
 
-1. Run the entire orchestrator loop from Phase 1 through Phase 3 and continue dispatching subagents until the directory is fully complete.
-2. Do not stop in the middle of the run to hand back a plan, TODO list, checkpoint, or "next steps" when you can still make progress yourself.
-3. Never tell the user to run `/pspec.implement` again to continue remaining feature specs. If more runnable work remains in the directory, continue dispatching subagents within the same run.
-4. If a subagent reports a failure, diagnose whether the feature spec is retriable. If retriable, spawn a new subagent for it. If not retriable, mark it `[~]` with the blocker reason and continue with the next eligible feature spec.
-5. Only stop early when this prompt explicitly tells you to stop for a real blocker, invalid planning artifact, missing required section, or external dependency you cannot resolve.
-6. Treat `PROGRESS.md` as the resumable write-ahead log and the handoff contract between the orchestrator and subagents.
-7. Do not leave unfinished implementation behind as `TODO`, `FIXME`, placeholder text, or follow-up markers unless the feature spec explicitly allows it.
+1. Run the full loop continuously. Do not stop mid-run for checkpoints or TODO lists.
+2. Never tell the user to rerun `/pspec.implement`. Continue dispatching while runnable work remains.
+3. PROGRESS.md is the write-ahead log and handoff contract. Persist state before and after every subagent.
+4. Do not leave TODO/FIXME/placeholder text in implementation.
+5. Only stop early for: missing required section, unresolvable external dependency, or invalid planning artifact.
 
-## Orchestrator Flow
+## Context Freshness
 
-The orchestrator does not implement feature specs directly. It coordinates subagents and validates their results.
+Context can rot between planning and implementation. The orchestrator prevents this:
 
-### Phase 1 - Load and Audit
+- S1 refreshes PROGRESS.md frontmatter context from disk before dispatching any worker
+- Workers re-read `.pspec/CONTEXT.md` and `AGENTS.md`/`CLAUDE.md` fresh at W1
+- Frontmatter context is advisory — workers must not rely on it as sole truth
+- If CONTEXT.md or AGENTS.md changed since planning, the fresh read at W1 takes precedence
 
-1. Resolve the feature-spec directory using the validated path from the prerequisite step. If the user passes `PROGRESS.md`, use its directory. If they pass a directory, use it directly.
-2. Read `PROGRESS.md` first. Parse its YAML frontmatter before starting any feature spec:
-   - use `context.key_files` as the exploration scope
-   - follow `context.patterns` for implementation style
-   - use `context.commands` for test, lint, and build invocations
-   - apply `context.conventions` for naming and export style
-3. Before any dispatch, read `AGENTS.md` or `CLAUDE.md` if present. These override `context.conventions` when they conflict.
-4. Read the PRD file referenced by `PROGRESS.md`. Extract every `AC-*` and `EC-*` ID from the PRD. If the PRD file cannot be read or does not contain these IDs, stop and report it.
-5. Compare the feature spec files to the `## Feature Specs` list in `PROGRESS.md`:
-   - every listed feature spec file exists
-   - every feature spec file is listed exactly once
-   - filename, id, and title match between `PROGRESS.md` and each feature spec file
-6. Read the `## Coverage Map` in `PROGRESS.md` and verify:
-   - every `AC-*` and `EC-*` from the PRD appears at least once
-   - every mapped feature spec file exists
-   - every feature spec file frontmatter `spec_ref` uses only IDs that exist in the PRD
-7. If any directory, registry, coverage, or resume-state mismatch exists, stop and report the first mismatch. Do not guess.
-8. Determine the next feature spec to dispatch:
-   - if exactly one feature spec is marked `[>]`, resume that feature spec
-   - if more than one feature spec is marked `[>]`, stop and report it
-   - if `## Active Work` points to a feature spec, it must match the sole `[>]` entry
-   - if no feature spec is `[>]`, pick the lowest-id `[ ]` feature spec whose `depends_on` entries are all `[x]`
-9. If no feature spec is eligible and no `[>]` entry exists, the directory is complete. Proceed to Phase 3.
+## Orchestrator Protocol
 
-### Phase 2 - Dispatch Subagents
+### S1 - Read Context
 
-10. For the next eligible feature spec, spawn a subagent with a task prompt constructed as follows:
-    - Copy the entire `## Worker Instructions` section below into the task prompt verbatim.
-    - Append the feature-spec-specific context:
-      - task directory path
-      - PROGRESS.md path
-      - feature spec filename
-      - PRD path
-      - key_files from PROGRESS.md frontmatter `context`
-      - commands from PROGRESS.md frontmatter `context`
-      - conventions from PROGRESS.md frontmatter `context`
-      - AGENTS.md or CLAUDE.md content summary (if present)
-    - The subagent reads all files from disk independently. Do not pass file contents into the task prompt; pass only paths and instructions.
-11. Wait for the subagent to complete. The subagent must:
-    - mark the feature spec `[>]` in `PROGRESS.md` before starting code edits
-    - implement the feature spec fully
-    - verify and review per the worker instructions
-    - mark the feature spec `[x]` in `PROGRESS.md` on success
-    - clear `## Active Work` to point to the next eligible feature spec
-    - return a compact result to the orchestrator
-12. After the subagent returns, read `PROGRESS.md` and validate the handoff:
-    - If the feature spec is now `[x]`, the subagent succeeded. Proceed to the next eligible feature spec.
-    - If the feature spec is still `[>]`, the subagent failed to complete. Do not spawn another subagent for the same task. Report the blocker with the feature spec id and title.
-    - If the feature spec is `[~]`, it is blocked. Log the blocker and check whether any other feature spec is still eligible (all dependencies `[x]`). If so, dispatch a subagent for it. If not, proceed to Phase 3.
-13. If the subagent succeeded and another eligible feature spec remains, immediately spawn a subagent for it. Do not pause to ask the user to continue.
-14. Only one subagent must be active at a time. Never spawn a new subagent before the previous one has returned.
-15. Only one feature spec must be marked `[>]` at any time. If `PROGRESS.md` has more than one `[>]` after a subagent returns, stop and report the inconsistency.
+- Read PROGRESS.md. Parse frontmatter context (key_files, patterns, commands, conventions).
+- Read `.pspec/CONTEXT.md` when present. Treat it as the primary source of truth for project context.
+- Read AGENTS.md/CLAUDE.md if present (overrides conventions on conflict).
+- Read PRD. Extract all AC-* and EC-* IDs.
+- Refresh PROGRESS.md frontmatter context: overwrite `context` with current values from CONTEXT.md and AGENTS.md/CLAUDE.md. This prevents stale context from propagating to workers.
 
-### Phase 3 - Close Out
+Gate: PRD readable and has AC-*/EC-* IDs. If not, stop.
 
-16. After all feature specs are dispatched and completed (or blocked), run a final closeout audit:
-    - no `[ ]` remains in `PROGRESS.md`
-    - no `[>]` remains in `PROGRESS.md`
-    - every `AC-*` and `EC-*` in `## Coverage Map` is satisfied by one or more `[x]` feature specs
-    - no placeholder text like `<...>`, `TBD`, `TODO`, `FIXME`, `later`, or `to be decided` remains in `PROGRESS.md` or feature spec files unless explicitly allowed
-17. If any `[~]` entries remain, list them with their blocker reasons in the output.
-18. Do not return `done` while any `[ ]`, `[>]`, or `[~]` remains.
-19. Return a compact result:
-    - completed feature specs
-    - files changed (aggregated from subagent results)
-    - verification runs and status (aggregated from subagent results)
-    - open blockers
-    - completion summary keyed by `AC-*` and `EC-*`
+### S2 - Audit Registry
 
-## Worker Instructions
+- Registry rows match real feature spec files (one-to-one on id, filename, title).
+- Coverage table maps every AC-* and EC-* to existing specs.
+- Active section matches sole `active` row in Registry (or is idle if none).
+- At most one row has status `active`.
 
-The orchestrator copies this entire section into each subagent task prompt. The subagent executes these instructions with fresh context, reading all files from disk independently.
+Gate: zero mismatches. If any, stop and report the first one.
 
-### Worker Guardrail
+### S3 - Pick Next Spec
 
-- Complete the entire feature spec in one run. Do not stop in the middle to hand back a TODO list, checkpoint, or "next steps" when you can still make progress.
-- Never tell the orchestrator to re-run `/pspec.implement` to continue. If more work remains within this feature spec, keep going.
-- If a check, test, or review step fails, diagnose all identified errors, fix them in a single batch, rerun the affected verification, and keep going.
-- Only stop early when a required section is missing, an external dependency cannot be resolved, or an environment issue blocks verification. In that case, mark the feature spec `[~]` in `PROGRESS.md` with the exact blocker reason and return.
-- Treat `PROGRESS.md` as the resumable write-ahead log. Persist the current phase and next resume step before code edits and after each major checkpoint.
-- Do not leave unfinished implementation behind as `TODO`, `FIXME`, placeholder text, or follow-up markers unless the feature spec explicitly allows it.
-- Before returning, you must update `PROGRESS.md`: mark the feature spec `[x]` on success, `[~]` with blocker reason on failure, and clear `## Active Work` to point to the next eligible feature spec.
+- If a row has status `active`, resume that spec.
+- If multiple rows are `active`, stop and report it.
+- If none active, pick lowest-id `pending` spec whose depends_on are all `done`.
+- If no eligible spec exists, go to S7.
 
-### Worker Phase W1 - Load Feature Spec
+### S4 - Dispatch Subagent
 
-1. Read `PROGRESS.md`. Parse its YAML frontmatter:
-   - use `context.key_files` as your exploration scope
-   - follow `context.patterns` for implementation style
-   - use `context.commands` for test, lint, and build invocations
-   - apply `context.conventions` for naming and export style
-   - read `## Active Work` as the resume checkpoint
-2. Read `AGENTS.md` or `CLAUDE.md` if present. These override `context.conventions` when they conflict.
-3. Read the PRD file referenced by `PROGRESS.md`. Extract every `AC-*` and `EC-*` ID from the PRD.
-4. Read the assigned feature spec file. Verify it has all required sections:
-   - YAML frontmatter with `id`, `title`, `tag`, `spec_ref`, and `depends_on`
-   - `# Goal`
-   - `## Requirement Coverage`
-   - `## Files`
-   - `## Data Model`
-   - `## API Contracts`
-   - `## UI States`
-   - `## User Interactions`
-   - `## Data Test IDs`
-   - `## Edge Cases`
-   - `## Approach`
-   - `## Verification`
-   - `## Definition Of Done`
-5. If a required section is missing or unclear, stop and report the first missing section. Do not guess.
-6. Mark the feature spec `[>]` in `PROGRESS.md`. Update `## Active Work` with the current feature spec filename, current phase (`W1 - Load`), and the next resume step. If more than one feature spec is already `[>]`, stop and report the inconsistency.
+- Copy the entire Worker Protocol section below into the task prompt.
+- Append spec-specific context: task dir, PROGRESS.md path, feature spec filename, PRD path, CONTEXT.md path, context from frontmatter.
+- Pass paths only, not file contents. The subagent reads from disk.
 
-### Worker Phase W2 - Implement
+### S5 - Validate Handoff
 
-7. Before any code edits, read every file listed under `## Files > ### Reference` in the feature spec.
-8. Follow the `## Approach` steps in order.
-9. Create and modify all listed files, including tests and verification artifacts. After each major checkpoint, refresh `## Active Work` in `PROGRESS.md` before continuing:
-   - after implementation changes are in place
-   - after each verification block succeeds or fails
-   - after each review pass completes or finds issues
-10. Keep implementation aligned with the feature-spec contract:
-    - implement all items in `## Data Model`
-    - if `## API Contracts` is not `Not applicable`, implement the listed endpoints and request/response shapes
-    - if web sections are not `Not applicable`, implement the listed UI states, user interactions, and `data-testid` values exactly as planned
+- Read PROGRESS.md from disk.
+- If spec is `done`: subagent succeeded. Go to S3.
+- If spec is still `active`: subagent failed. Report blocker. Stop.
+- If spec is `blocked`: log blocker. Try S3 for next eligible spec.
+- If more than one row is `active`: stop and report inconsistency.
 
-### Worker Phase W3 - Audit Planned Work
+### S6 - Loop
 
-11. Compare the implementation result against the feature spec before verification:
-    - every file under `### Create` exists
-    - every file under `### Modify` was updated as required
-    - every promised test file or verification artifact exists
-    - every `spec_ref` ID for the feature spec is addressed by the implemented change
-    - every item in `## Requirement Coverage` is reflected in code or tests
-    - every planned `data-testid` is present in the implementation and reused in tests when applicable
-12. If any planned file, artifact, API contract, UI state, interaction, or referenced requirement is missing, fix it before verification.
+- Return to S3.
 
-### Worker Phase W4 - Verify And Review
+### S7 - Close Out
 
-13. Run every verification block in `## Verification`:
-    - Base case
-    - Unit tests
-    - Edge cases
-    - E2E
-14. Never claim a verification step passed unless you actually ran it and it succeeded.
-15. If a verification step fails with multiple errors, diagnose and fix all of them in a single batch, then rerun that step.
-16. If a verification step cannot run because of an external dependency or environment issue you cannot resolve, mark the feature spec `[~]` in `PROGRESS.md` with the exact reason, update `## Active Work` with the blocker context, and return the blocked status to the orchestrator.
-17. Do not mark `[x]` when a required verification step was skipped, failed, or could not run.
-18. Review pass rules:
-    - `TRIVIAL` -> 1 full review pass
-    - `CRITICAL` -> 2 full review passes
-19. Each review pass must check:
-    - the base case still works
-    - edge cases and failure modes are covered
-    - no implementation steps were skipped
-    - no `TODO`, `FIXME`, placeholder, or follow-up markers were left behind unless the feature spec explicitly allows them
-    - unit tests and end-to-end verification still match the implemented behavior
-    - implemented API endpoints still match the planned request/response shapes when applicable
-    - implemented UI states, interactions, and `data-testid` values still match the feature spec when applicable
-20. Check every bullet in `## Definition Of Done` one by one. Do not mark `[x]` unless each bullet can be supported by executed verification or direct file evidence.
-21. If a review pass or definition-of-done check finds issues, fix all identified issues in a single batch, rerun the affected verification, then repeat that review pass.
+- Verify: zero rows with status `pending` or `active`.
+- Verify: Coverage table — every requirement mapped to a `done` spec.
+- Verify: no placeholder text in any feature spec file.
+- If clean: return done.
+- If blocked rows remain: return partial (some done) or blocked (none done) with blocker reasons.
 
-### Worker Phase W5 - Complete
+## Worker Protocol
 
-22. Mark the feature spec `[x]` in `PROGRESS.md` immediately after all required verification and review passes succeed.
-23. Clear `## Active Work` to `Current: None`, `Phase: idle`, and add a short note about the next ready feature spec. Only add a note when useful.
-24. Update the original PRD file (`.pspec/specs/<filename>.md`) to change the status of this feature in the `## Feature Breakdown` from `[PLANNED]` to `[IMPLEMENTED]`.
-25. Return a compact result to the orchestrator:
-    - Status: `done` or `blocked`
-    - Feature spec: id and title
-    - Files changed
-    - Verification: checks run and status
-    - Coverage: `AC-*` and `EC-*` addressed
-    - Blocker reason (only if status is `blocked`)
+The orchestrator copies this section into each subagent task prompt.
+
+### Worker Guardrails
+
+- Complete the entire feature spec in one run.
+- Never ask to rerun `/pspec.implement`.
+- If a check or test fails, batch-fix all errors, rerun, keep going.
+- Only stop early for: missing section, unresolvable dependency, environment issue.
+- Update PROGRESS.md before code edits and after every major checkpoint.
+
+### Block Parsing
+
+Each feature spec may contain fenced code blocks with language tags: `config`, `allowlist`, `state`, `action`, `decision`, `validate`. Parse these blocks before executing:
+
+1. Extract all blocks by language tag.
+2. Validate:
+   - config block exists with name and version
+   - all action.ids are unique
+   - all decision.ids are unique
+   - all validate.ids are unique
+   - all depends_on reference existing action ids
+   - all tool values exist in config.tools
+   - no cycles in the depends_on graph
+
+### Allowlist Enforcement
+
+Before executing any `action` block:
+
+1. Find all allowlist entries where `tool` matches `action.tool`.
+2. If allowlist entries exist for this tool:
+   - For `run_command`: check that `args.command` matches at least one pattern
+   - For `write_file`: check that `args.path` matches at least one pattern
+   - For `read_file`: check that `args.path` matches at least one pattern
+3. If `args` does not match any pattern: block the action, report the violation, and set spec to `blocked`.
+4. If no allowlist entries exist for this tool: allow the action.
+
+### Decision Resolution
+
+For each `decision` block in document order:
+
+1. Check `state.decisions[decision.id]`. If already set, skip.
+2. Check `condition`. If set and evaluates to false, skip.
+3. Use the `ask_user` tool to present the question:
+   - Show all `options` with label and value
+   - If `allow_other` is true, include `other_label` as an additional option
+   - If `multi_select` is true, allow multiple selections
+4. Process the response:
+   - If `selected` is a predefined value: store in `state.decisions[decision.id]`
+   - If `selected` is `"other"`:
+     a. Extract `custom_value`, trim whitespace
+     b. If empty: inform user, re-ask (max 3 attempts)
+     c. Apply `other_validation`:
+        - `regex`: match `custom_value` against `pattern`. Reject with `message`.
+        - `enum`: check `custom_value` is in `values`. Reject with `message`.
+        - `length`: check `min <= len(custom_value) <= max`. Reject with `message`.
+     d. If validation fails: inform user, re-ask (max 3 total attempts, then abort spec)
+     e. Apply `other_normalize`:
+        - `slug`: lowercase, replace non-[a-z0-9] with hyphens, strip leading/trailing hyphens, collapse consecutive hyphens
+        - `lower`: lowercase only
+        - `raw`: no transformation
+     f. Store normalized value in `state.decisions[decision.id]`
+5. Write the updated state block back to the feature spec file.
+
+### W1 - Load
+
+1. Read PROGRESS.md. Parse frontmatter and Active section.
+2. Read `.pspec/CONTEXT.md` when present for project context and conventions.
+3. Read AGENTS.md/CLAUDE.md if present.
+3. Read PRD. Extract all AC-*/EC-* IDs.
+4. Read assigned feature spec. Verify sections: Goal, Contracts, Files, Actions, Validates, Done.
+5. Parse all fenced code blocks (config, allowlist, state, action, decision, validate).
+6. If a section or block is missing, stop and report the first missing item.
+7. Mark spec `active` in Registry. Update Active section with filename, phase `W1`, resume note, timestamp.
+8. If another spec is already `active`, stop and report it.
+
+Gate: all sections present, all blocks valid, spec marked active, no other active spec.
+
+### W2 - Resolve Decisions
+
+9. For each `decision` block, resolve using the process above.
+10. Write the updated state block after each decision.
+11. After all decisions are resolved, write the final state.
+
+### W3 - Execute Actions
+
+12. Topologically sort actions by `depends_on` (preserve document order for ties).
+13. For each action in order:
+    a. If `condition` is set, evaluate it. If false, add id to `state.completed` and skip.
+    b. If any `depends_on` action is in `state.failed`, add this action to `state.failed` with `error: "dependency failed"`, `retries: 0`. If `on_failure == abort`, set state to `failed`, stop.
+    c. Check allowlist (see above). If blocked, stop and report.
+    d. Resolve template variables in `args`:
+       - Replace `{{decisions.KEY}}` with resolved decision values
+       - Replace `{{artifacts.ID}}` with file paths from completed actions
+       - Warn if any `{{...}}` pattern remains unresolved
+    e. Execute `action.tool` with resolved args.
+    f. On success: add id to `state.completed`, store output files in `state.artifacts[id]`, clear `state.current_action`, write state to file.
+    g. On failure: retry up to `action.retry` (default from `config.defaults.retry`) times.
+       - If all retries exhausted: add `{id, error, retries}` to `state.failed`.
+       - If `on_failure == abort`: set state status to `failed`, write state, stop.
+       - If `on_failure == skip`: continue to next action.
+       - Default: continue to next action.
+14. Update Active (phase `W3`, current step, timestamp) after each major action.
+
+Gate: all actions executed or skipped, no abort-level failures.
+
+### W4 - Audit Implemented Work
+
+15. Compare implementation against spec:
+    - every `create` file exists
+    - every `modify` file was updated
+    - every verification artifact exists
+    - every spec_ref ID is addressed
+    - every API/UI contract matches the Contracts section
+    - every data-testid is present in code
+16. If anything is missing, fix it before proceeding.
+
+Gate: all planned files and contracts match spec.
+
+### W5 - Run Validates
+
+17. For each `validate` block (grouped by type: base → edges → e2e):
+    a. Check `depends_on`: if any action is in `state.failed`, skip with warning.
+    b. Resolve `args` template variables.
+    c. Execute `validate.tool` with args.
+    d. If result matches `expect`: pass.
+    e. If result does not match:
+       - Retry up to `validate.retry` times.
+       - If all retries exhausted and `on_failure == abort`: set state to `failed`, write state, stop.
+       - If `on_failure == skip`: mark as failed, continue.
+       - Default: mark as failed, continue.
+18. Never claim a validate passed unless you ran it and it succeeded.
+
+Review passes:
+- TRIVIAL: 1 full pass
+- CRITICAL: 2 full passes
+- Each pass checks: base case, edges, no skipped steps, no TODO/FIXME, contracts match, testids match.
+
+Gate: all validates pass, all review passes complete.
+
+### W6 - Complete
+
+19. Check every Done checkbox with evidence. Mark [x] only with proof.
+20. If review finds issues, batch-fix, rerun affected validates, repeat that review pass.
+21. Mark spec `done` in Registry.
+22. Update Active to: Spec `None`, Phase `idle`, note about next spec.
+23. Update PRD `## Features`: this feature's status → [IMPLEMENTED].
+24. Update state block: `status: done`, `finished_at: <ISO timestamp>`, `current_action: null`.
+25. Return compact result: status, spec id/title, files changed, verification summary, coverage addressed.
 
 ## Constraints
 
-- The orchestrator coordinates subagents; it does not implement feature specs directly
-- Only one subagent is active at a time; wait for each subagent to return before spawning the next
-- The subagent reads all files from disk independently; the orchestrator passes paths, not file contents
-- `PROGRESS.md` is the handoff contract: the subagent must update it before returning
-- The orchestrator validates `PROGRESS.md` state after each subagent returns
-- Process one feature spec per subagent. Do not batch feature specs
-- Resume the existing `[>]` feature spec before any new `[ ]` item
-- Treat `PROGRESS.md` as the resumable source of truth; persist the current phase and next resume step whenever state changes
-- Execute feature specs in `id` order, respecting `depends_on`
-- Do not mark a feature spec complete until functional behavior, unit coverage, edge-case coverage, and end-to-end verification all pass
+- Orchestrator coordinates subagents; it does not implement feature specs directly
+- Only one subagent active at a time; wait for return before spawning the next
+- Subagent reads all files from disk independently; orchestrator passes paths only
+- PROGRESS.md is the handoff contract; subagent must update it before returning
+- Orchestrator validates PROGRESS.md state after each subagent returns
+- Process one feature spec per subagent; do not batch
+- Resume the existing `active` spec before any new `pending` item
+- Execute in id order, respecting depends_on
+- Do not mark `done` until functional behavior, unit tests, edges, and E2E all pass
 - Never claim success for a check you did not run
-- Stop on the first feature-spec registry, coverage-map, or missing-section mismatch
-- Match naming and export conventions exactly
-- Prefer existing helpers over new abstractions
-- Batch fixes for multiple failing tests or errors together instead of fixing them one by one
+- Stop on first registry, coverage, or missing-section mismatch
+- Batch fixes for multiple failing tests together
 - Never pause between feature specs or ask for confirmation mid-run
-- Never ask the user to rerun `/pspec.implement` to continue remaining runnable work
+- Never tell the user to rerun `/pspec.implement`
 - Never commit changes unless explicitly asked
-- Never leave a subagent running after it has returned its result; delete it and proceed
-
-## Subagent Lifecycle Guardrail
-
-- The orchestrator must spawn one subagent, wait for it to return, validate the result, then spawn the next subagent. This is a strict sequential loop.
-- After a subagent returns, the orchestrator must read `PROGRESS.md` from disk to verify the expected state change (`[>]` to `[x]` or `[~]`) before proceeding.
-- If the orchestrator cannot confirm the state change in `PROGRESS.md` after a subagent returns (e.g., file is unchanged or corrupted), the orchestrator must stop and report the inconsistency. Do not spawn another subagent for the same task or skip ahead.
-- The orchestrator must never have more than one active subagent at a time.
-- If a subagent returns without updating `PROGRESS.md` (no state change from `[>]`), treat it as a failure. Do not spawn another subagent for the same task. Report the blocker.
-- The orchestrator must not carry stale context between subagent dispatches. Read `PROGRESS.md` fresh from disk before each spawn decision.
+- Never leave a subagent running after it has returned
 
 ## Output
 
-- Status: [done|partial|blocked]
-- Use `done` only when the final closeout audit passes and no `[ ]`, `[>]`, or `[~]` remains.
-- Use `partial` only when at least one feature spec completed in this run but another feature spec is `[~]` blocked.
-- Use `blocked` only when no feature spec could complete because every eligible feature spec hit an explicit blocker.
-- Do not use `partial` or `blocked` for a voluntary mid-run handoff.
-- Work: [implemented behavior]
-- Files: [file path summary]
-- Verification: [checks run and status]
-- Coverage: [AC-* and EC-* completion summary]
+- Status: done | partial | blocked
+- `done`: closeout audit passes, no pending/active/blocked rows
+- `partial`: >= 1 spec completed, >= 1 blocked
+- `blocked`: zero specs completed, all eligible blocked
+- Never use partial/blocked for voluntary handoff
+- Work: implemented behavior summary
+- Files: changed file paths
+- Verification: checks run and status
+- Coverage: AC-* and EC-* completion summary
