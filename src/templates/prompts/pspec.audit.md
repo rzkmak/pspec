@@ -20,57 +20,64 @@ Use this command when a PRD changed after planning, when feature spec files drif
    - every Registry row matches a real feature spec file (id, filename, title)
    - every feature spec file has a Registry row
 7. Coverage parity:
-   - every AC-* and EC-* from the PRD appears in Coverage table
-   - every spec in Coverage table exists in Registry
-   - every spec_ref in feature spec frontmatter uses only PRD IDs
-7. Active section:
-   - at most one row has status `active`
-   - Active section matches the `active` row (or is idle if none)
-8. Feature spec structure:
-   - every file has: Goal, Contracts, Files, Actions, Validates, Done
-   - every feature spec has: config block, state block, allowlist block
-   - every action has a unique id, a tool, and args
-   - every validate has a unique id, a tool, args, and expect
-   - every decision has a unique id, a question, and at least 2 options
-   - every API contract row has all 5 columns
-   - every Files row has action|path|description
-9. Block validation:
-   - config block exists with name and version
-   - all action.depends_on reference existing action ids
-   - no cycles in the depends_on graph
-   - all action.tool values exist in config.tools
-   - all validate.tool values exist in config.tools
-   - all allowlist entries have tool and allow fields
-   - all decision.other_validation rules have type and message
-10. Placeholder detection: no <...>, TBD, TODO, FIXME, "to be decided".
+    - every AC-* and EC-* from the PRD appears in Coverage table
+    - every spec in Coverage table exists in Registry
+    - every spec_ref in feature spec frontmatter uses only PRD IDs
+8. PRD change detection:
+    - compare AC-* and EC-* IDs from the current PRD against the Coverage table
+    - identify added requirements (in PRD but not in Coverage), removed requirements (in Coverage but not in PRD), and modified requirements (wording changed in PRD)
+    - any added, removed, or modified requirement triggers a sync in Phase 3
+    - if a requirement is unmapped (not covered by any spec), flag it for spec creation
+    - if two or more specs reference the same AC-* or EC-*, flag the overlap and ensure at least one spec remains responsible for it after sync
+9. Active section:
+    - at most one row has status `active`
+    - Active section matches the `active` row (or is idle if none)
+10. Feature spec structure:
+    - every file has: Goal, Contracts, Files, Actions, Validates, Done
+    - every feature spec has: config block, state block, allowlist block
+    - every action has a unique id, a tool, and args
+    - every validate has a unique id, a tool, args, and expect
+    - every decision has a unique id, a question, and at least 2 options
+    - every API contract row has all 5 columns
+    - every Files row has action|path|description
+11. Block validation:
+    - config block exists with name and version
+    - all action.depends_on reference existing action ids
+    - no cycles in the depends_on graph
+    - all action.tool values exist in config.tools
+    - all validate.tool values exist in config.tools
+    - all allowlist entries have tool and allow fields
+    - all decision.other_validation rules have type and message
+12. Placeholder detection: no <...>, TBD, TODO, FIXME, "to be decided".
 
 ## Phase 3 - Sync
 
-11. If PRD changed, update artifacts:
+13. If PRD changed, update artifacts:
     - keep specs that still cover correct requirements
     - update Registry, Active, Coverage, context when needed
     - update spec_ref and Contracts when they drift
-    - create new specs for new AC-*/EC-*
-    - remove stale requirement references
+    - create new pending specs for unmapped requirements: assign the next sequential ID, create a feature spec file with matching spec_ref, and add a Coverage entry mapping the new requirement to the new spec
+    - remove stale requirement references from Coverage when an EC-* is deleted from the PRD; re-evaluate whether the affected spec still covers remaining requirements
+    - when two or more specs reference the same AC-* or EC-*, ensure at least one spec remains responsible after sync; if the overlapping spec is being removed or downgraded, transfer coverage responsibility to a remaining spec
     - refresh PROGRESS.md frontmatter context from CONTEXT.md and AGENTS.md/CLAUDE.md when present
-12. Preserve valid work:
+14. Preserve valid work:
     - `done` + still valid → keep done
     - `active` + still valid → keep active, preserve resume note
     - `active` + materially changed → downgrade to `pending`, update Active
     - `done` + materially changed → downgrade to `pending`, add note
     - `blocked` → keep unless drift resolves the blocker
-13. Minimize file renames. Renumber only when order is broken.
+15. Minimize file renames. Renumber only when order is broken.
 
 ## Phase 4 - Fail Closed
 
-14. Re-run audit after sync. Verify:
+16. Re-run audit after sync. Verify:
     - [ ] Registry and feature spec files agree
     - [ ] Active section matches in-progress state or is idle
     - [ ] Coverage table maps every AC-* and EC-*
     - [ ] Every feature spec has required sections and blocks
     - [ ] All action, decision, and validate blocks pass structure validation
     - [ ] No placeholder text
-15. If any check fails, stop and report. Do not claim synced.
+17. If any check fails, stop and report. Do not claim synced.
 
 ## Output
 

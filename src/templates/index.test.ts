@@ -207,7 +207,8 @@ describe('templates', () => {
             'other_normalize',
             'Deny-by-default',
             'Read `.pspec/CONTEXT.md`',
-            'Merge `.pspec/CONTEXT.md`'
+            'Merge `.pspec/CONTEXT.md`',
+            'evidence'
           ],
           forbidden: [
             'parallelizable',
@@ -251,7 +252,12 @@ describe('templates', () => {
             'allowlist',
             'no cycles in the depends_on graph',
             '.pspec/CONTEXT.md',
-            'refresh PROGRESS.md frontmatter context'
+            'refresh PROGRESS.md frontmatter context',
+            'PRD change detection',
+            'unmapped requirement',
+            'at least one spec',
+            'stale requirement references',
+            'create new pending specs'
           ],
           forbidden: [
             'parallelizable',
@@ -301,7 +307,18 @@ describe('templates', () => {
             '.pspec/CONTEXT.md',
             'Refresh PROGRESS.md frontmatter context',
             'Context Freshness',
-            'workers must not rely on it as sole truth'
+            'workers must not rely on it as sole truth',
+            'Fail-Closed Rules',
+            'done-to-validate',
+            'state.evidence',
+            'skipped-with-reason',
+            'batch-fix',
+            'no evidence',
+            'Files table and Contracts section',
+            'Attestation before done',
+            'Never mark a Done item or a validate as passed unless you executed it and captured evidence',
+            'Never check a Done item if no mapped validate',
+            'Confirm the spec status matches'
           ],
           forbidden: [
             'parallelizable',

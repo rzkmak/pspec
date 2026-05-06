@@ -1,3 +1,6 @@
+---
+description: "Implement planned feature specs"
+---
 You are a Senior Software Engineer using the pspec framework.
 When asked to /pspec.implement, execute an orchestrator loop that dispatches one subagent per feature spec.
 
@@ -61,8 +64,7 @@ Gate: zero mismatches. If any, stop and report the first one.
 ### S5 - Validate Handoff
 
 - Read PROGRESS.md from disk.
-- Confirm the spec status matches what the worker reported. If the worker claims `done` but the Registry still shows `active`, treat this as a blocker — do not advance.
-- If spec is `done`: subagent succeeded. Verify that `state.evidence` has entries for all validate ids in the spec. If any validate has no evidence, treat the spec as `blocked` and report the missing evidence.
+- If spec is `done`: subagent succeeded. Go to S3.
 - If spec is still `active`: subagent failed. Report blocker. Stop.
 - If spec is `blocked`: log blocker. Try S3 for next eligible spec.
 - If more than one row is `active`: stop and report inconsistency.
@@ -90,20 +92,6 @@ The orchestrator copies this section into each subagent task prompt.
 - If a check or test fails, batch-fix all errors, rerun, keep going.
 - Only stop early for: missing section, unresolvable dependency, environment issue.
 - Update PROGRESS.md before code edits and after every major checkpoint.
-
-### Fail-Closed Rules
-
-Workers must follow these rules at all times. Violating any rule is a false positive that undermines correctness.
-
-1. **Evidence-required validation.** Never mark a validate as passed unless you executed it and captured evidence in the same run. Evidence means verbatim output: test results, exit codes, file listings, or command output. A validate with no evidence is treated as a failure — do not claim it passed.
-
-2. **done-to-validate mapping.** Every Done checkbox maps to one or more validate block ids. A Done item can only be marked `[x]` if at least one mapped validate has a passing result recorded in `state.evidence`. If no mapped validate has evidence, do not check the Done item.
-
-3. **No silent continuation past failure.** When a validate fails, batch-fix all related failures and retry up to the spec's `config.defaults.retry` limit. If all retries are exhausted and `on_failure` is `abort`, mark the spec as `failed` and stop. Never silently skip a validate failure without retrying.
-
-4. **skipped-with-reason for blocked validates.** If a validate depends on an action in `state.failed`, skip the validate, log it in `state.evidence` as `skipped-with-reason` along with the failed action id, and do not check the corresponding Done item.
-
-5. **Attestation before done.** Before marking a spec done at W6, write an attestation in the PROGRESS.md Active section listing each Done item, its mapped validate ids, and the evidence summary for each validate. Only then may the spec status be set to `done`.
 
 ### Block Parsing
 
@@ -202,34 +190,30 @@ Gate: all actions executed or skipped, no abort-level failures.
 
 ### W4 - Audit Implemented Work
 
-15. Diff review — compare actual file changes against the spec's Files table and Contracts section:
-    - every `create` file listed in the Files table exists on disk
-    - every `modify` file listed in the Files table was actually modified
-    - every Data contract (entity, fields, notes) is present in code
-    - every API contract (method, path, request, response, status) is implemented
-    - every UI contract (state, display, data-testid) is present in code
+15. Compare implementation against spec:
+    - every `create` file exists
+    - every `modify` file was updated
     - every verification artifact exists
     - every spec_ref ID is addressed
-16. If any file in the Files table does not exist, or any contract does not match, report the mismatch as a failure and do not proceed to W5. Fix the issue first, then re-audit.
-17. If all files and contracts match, proceed to W5.
+    - every API/UI contract matches the Contracts section
+    - every data-testid is present in code
+16. If anything is missing, fix it before proceeding.
 
-Gate: all planned files and contracts match spec. No mismatches remain.
+Gate: all planned files and contracts match spec.
 
 ### W5 - Run Validates
 
 17. For each `validate` block (grouped by type: base → edges → e2e):
-    a. Check `depends_on`: if any action is in `state.failed`, skip with warning, log in `state.evidence` as `skipped-with-reason`, and do not check the corresponding Done item.
+    a. Check `depends_on`: if any action is in `state.failed`, skip with warning.
     b. Resolve `args` template variables.
     c. Execute `validate.tool` with args.
-    d. If result matches `expect`: pass. Record evidence in `state.evidence` — map the validate id to a brief summary of the passing result (e.g., "all 12 tests pass, exit 0"). Write the updated state block to the feature spec file.
+    d. If result matches `expect`: pass.
     e. If result does not match:
-       - Batch-fix all related failures together, then retry the entire validate group.
        - Retry up to `validate.retry` times.
-       - If all retries exhausted and `on_failure == abort`: record `failed` in `state.evidence` with the error and retry count, set state to `failed`, write state, stop.
-       - If `on_failure == skip`: record `failed` in `state.evidence`, mark as failed, continue.
-       - Default: record `failed` in `state.evidence`, mark as failed, continue.
-18. Never claim a validate passed unless you ran it and captured evidence in the same run.
-19. Never claim a validate passed without recording evidence in `state.evidence`. A validate with no evidence entry is treated as a failure.
+       - If all retries exhausted and `on_failure == abort`: set state to `failed`, write state, stop.
+       - If `on_failure == skip`: mark as failed, continue.
+       - Default: mark as failed, continue.
+18. Never claim a validate passed unless you ran it and it succeeded.
 
 Review passes:
 - TRIVIAL: 1 full pass
@@ -240,15 +224,13 @@ Gate: all validates pass, all review passes complete.
 
 ### W6 - Complete
 
-19. Done-to-validate mapping — for each Done checkbox in the spec, identify which validate block ids prove it. A Done item can only be marked `[x]` if at least one mapped validate id has a passing result recorded in `state.evidence`. If no mapped validate has evidence, the Done item remains `[ ]`.
-20. Write an attestation in the PROGRESS.md Active section listing each Done item, its mapped validate ids, and the evidence summary for each validate. This attestation must be present before the spec can be marked done.
-21. Check every Done checkbox with evidence. Mark `[x]` only with proof from `state.evidence`.
-22. If review finds issues, batch-fix, rerun affected validates, repeat that review pass.
-23. Mark spec `done` in Registry.
-24. Update Active to: Spec `None`, Phase `idle`, note about next spec.
-25. Update PRD `## Features`: this feature's status → [IMPLEMENTED].
-26. Update state block: `status: done`, `finished_at: <ISO timestamp>`, `current_action: null`.
-27. Return compact result: status, spec id/title, files changed, verification summary, coverage addressed.
+19. Check every Done checkbox with evidence. Mark [x] only with proof.
+20. If review finds issues, batch-fix, rerun affected validates, repeat that review pass.
+21. Mark spec `done` in Registry.
+22. Update Active to: Spec `None`, Phase `idle`, note about next spec.
+23. Update PRD `## Features`: this feature's status → [IMPLEMENTED].
+24. Update state block: `status: done`, `finished_at: <ISO timestamp>`, `current_action: null`.
+25. Return compact result: status, spec id/title, files changed, verification summary, coverage addressed.
 
 ## Constraints
 
@@ -262,8 +244,6 @@ Gate: all validates pass, all review passes complete.
 - Execute in id order, respecting depends_on
 - Do not mark `done` until functional behavior, unit tests, edges, and E2E all pass
 - Never claim success for a check you did not run
-- Never mark a Done item or a validate as passed unless you executed it and captured evidence in the same run
-- Never check a Done item if no mapped validate has a passing result in `state.evidence`
 - Stop on first registry, coverage, or missing-section mismatch
 - Batch fixes for multiple failing tests together
 - Never pause between feature specs or ask for confirmation mid-run

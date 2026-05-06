@@ -1,0 +1,9 @@
+{
+  "agents": [
+    "opencode"
+  ],
+  "paths": {
+    "specs": ".pspec/specs",
+    "tasks": ".pspec/tasks"
+  }
+}
