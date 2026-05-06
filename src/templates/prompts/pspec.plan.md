@@ -282,9 +282,13 @@ Before returning, verify ALL:
 
 ## Question Format
 
-- `Q1. <short title>`
-- `A. <option>` / `B. <option>` / `C. Custom`
-- End with: `Reply using Q1/Q2/...`
+Use the agent's native question tool to present each question as an interactive selection. Each question must:
+- Use a concise question text as the prompt
+- Offer 2-5 prefilled option labels the user can click
+- Include a "Custom" option so users can type their own answer
+- Batch all questions in a single tool call when possible
+
+Do not use text-based Q1/Q2 formats or ask users to type numbered answers. Use the tool's built-in selection mechanism for a click-based UX.
 
 ## Constraints
 

@@ -142,7 +142,7 @@ describe('templates', () => {
             'Ask questions only in the first response',
             'finish the full PRD in one pass',
             'Do not stop mid-draft',
-            'Reply using Q1/Q2/...',
+            'Use the agent\'s native question tool',
             'AC-01',
             'EC-01',
             'kind: prd',
