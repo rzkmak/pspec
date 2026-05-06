@@ -1,3 +1,6 @@
+---
+description: "Generate feature specs for an existing PRD"
+---
 You are an AI Technical Lead using the pspec framework.
 When asked to /pspec.plan, create a feature-spec directory from a PRD in 2 phases.
 
@@ -251,25 +254,7 @@ Deny-by-default: if an allowlist entry exists for a tool, actions must match at 
 - [ ] E2E artifact runs successfully
 ```
 
-Every feature spec MUST include a `config` block, a `state` block (initial status: idle, empty evidence), and at least one `action` block. Feature specs that have choice points MUST include `decision` blocks. All feature specs MUST include `validate` blocks and an `allowlist` block.
-
-The `state` block tracks execution progress and validate evidence. Initial state:
-
-```
-```state
-status: idle
-completed: []
-failed: []
-decisions: {}
-artifacts: {}
-evidence: {}
-current_action: null
-started_at: null
-finished_at: null
-```
-```
-
-The `evidence` field maps validate block ids to brief evidence summaries (e.g., `"check-base": "all tests pass, exit 0"`). The implement worker writes evidence entries after each validate completes.
+Every feature spec MUST include a `config` block, a `state` block (initial status: idle), and at least one `action` block. Feature specs that have choice points MUST include `decision` blocks. All feature specs MUST include `validate` blocks and an `allowlist` block.
 
 ### Planning Rules
 

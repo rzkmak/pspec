@@ -166,6 +166,7 @@ completed: []
 failed: []
 decisions: {}
 artifacts: {}
+evidence: {}
 current_action: null
 started_at: null
 finished_at: null
@@ -173,6 +174,11 @@ finished_at: null
 ```
 
 Status values: `idle` | `running` | `paused` | `done` | `failed`.
+
+The `evidence` field maps validate block ids to brief evidence summaries. The implement worker writes entries after each validate completes:
+- On pass: `"check-base": "all 12 tests pass, exit 0"`
+- On fail: `"check-edges": "failed: 2 edge cases failed (retries: 1)"`
+- On skip (dependency failed): `"check-e2e": "skipped-with-reason: action deploy-server in state.failed"`
 
 #### `action` block
 
@@ -317,9 +323,13 @@ End-to-end verification rules:
 `/pspec.audit` reconciles a feature-spec directory with its PRD:
 - read PROGRESS.md and the source PRD
 - audit registry parity, coverage parity, feature spec structure, block structure validation
+- PRD change detection: compare AC-\* and EC-\* IDs from the current PRD against the Coverage table to find added, removed, or modified requirements
 - validate action ids, decision ids, validate ids are unique
 - validate depends_on references, tool references, allowlist structure
 - check no cycles in dependency graphs
+- when two or more specs reference the same AC-\* or EC-\*, ensure at least one spec remains responsible after sync
+- create new pending specs for unmapped requirements (next sequential ID)
+- remove stale requirement references from Coverage
 - preserve valid work: `done` + still valid → keep, `active` + changed → downgrade to `pending`
 - never change product code; only update PROGRESS.md and feature spec files
 - never claim the directory is clean if issues remain

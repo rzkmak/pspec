@@ -20,14 +20,3 @@ coverage/
 # Temporary files
 *.log
 .npm/
-
-# pspec itself is meant to be committed in projects that use it, 
-# but we shouldn't commit the test state or the AI config files 
-# we generated *for* this repo during testing/initialization 
-# unless we explicitly want them.
-# For now, we will ignore the agent-specific configs generated during test runs.
-.gemini/
-.claude/
-.cursor/
-.opencode/
-.pspec/INSTRUCTIONS.md
