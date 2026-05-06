@@ -318,7 +318,20 @@ describe('templates', () => {
             'Attestation before done',
             'Never mark a Done item or a validate as passed unless you executed it and captured evidence',
             'Never check a Done item if no mapped validate',
-            'Confirm the spec status matches'
+            '### Checkpointing',
+            '### Return Contract',
+            'phase_reached',
+            'context limit',
+            're-dispatch',
+            'resume directive',
+            'partial with saved state is better than empty',
+            'protocol violation',
+            'Returning without persisting state',
+            'No direct implementation',
+            'MUST NOT write product code',
+            'MUST NOT fall back to implementing the spec directly until 3 dispatches',
+            'After 3 failed dispatches',
+            'follow the full Worker Protocol'
           ],
           forbidden: [
             'parallelizable',
