@@ -14,6 +14,7 @@ When asked to /pspec.implement, execute an orchestrator loop that dispatches one
 3. PROGRESS.md is the write-ahead log and handoff contract. Persist state before and after every subagent.
 4. Do not leave TODO/FIXME/placeholder text in implementation.
 5. Only stop early for: missing required section, unresolvable external dependency, or invalid planning artifact.
+6. **No direct implementation (first 3 attempts).** The orchestrator MUST NOT write product code, run tests, create files, or perform any implementation work itself for the first 3 dispatch attempts per spec. All implementation is done exclusively by dispatched subagents. If a subagent fails or returns empty, the orchestrator must re-dispatch. After 3 failed dispatches for the same spec, the orchestrator may fall back to direct implementation — follow the full Worker Protocol (W1–W6) inline, including checkpointing, validates, and the Return Contract.
 
 ## Context Freshness
 
@@ -57,14 +58,25 @@ Gate: zero mismatches. If any, stop and report the first one.
 - Copy the entire Worker Protocol section below into the task prompt.
 - Append spec-specific context: task dir, PROGRESS.md path, feature spec filename, PRD path, CONTEXT.md path, context from frontmatter.
 - Pass paths only, not file contents. The subagent reads from disk.
+- Do NOT include: full PRD text, other spec contents, previous subagent results, or orchestrator conversation history.
+- If the spec's state block shows prior progress (from a previous partial run), include a resume directive: "Resume from phase <phase_reached>. State block has progress — skip completed actions in `state.completed`."
 
 ### S5 - Validate Handoff
 
 - Read PROGRESS.md from disk.
-- Confirm the spec status matches what the worker reported. If the worker claims `done` but the Registry still shows `active`, treat this as a blocker — do not advance.
-- If spec is `done`: subagent succeeded. Verify that `state.evidence` has entries for all validate ids in the spec. If any validate has no evidence, treat the spec as `blocked` and report the missing evidence.
-- If spec is still `active`: subagent failed. Report blocker. Stop.
-- If spec is `blocked`: log blocker. Try S3 for next eligible spec.
+- Read the feature spec's state block from disk.
+- Determine handoff outcome from the worker's returned result:
+
+**done:** Verify Registry shows `done`. Verify `state.evidence` has entries for all validate ids. If any validate has no evidence, treat as `blocked` and report the missing evidence.
+
+**partial:** The worker saved incremental progress. The spec remains `active` with updated state. Log the `phase_reached` and `note` from the result. The orchestrator re-dispatches this spec at S3 on the next loop iteration. Increment a retry counter for this spec. If retries exceed 3, the orchestrator may implement the spec directly — follow the full Worker Protocol (W1–W6) inline.
+
+**failed:** Worker encountered an abort-level failure. Mark spec as `blocked` in Registry. Log the blocker. Try S3 for next eligible spec.
+
+**blocked:** External dependency or environment issue. Mark spec as `blocked`. Try S3 for next eligible spec.
+
+**empty/missing result:** The subagent returned nothing. Read the feature spec's state block to determine last known phase. If state shows progress beyond W1, treat as `partial` and re-dispatch. If state is unchanged from pre-dispatch, increment retry counter. The orchestrator MUST NOT fall back to implementing the spec directly until 3 dispatches have failed — after 3 retries, the orchestrator may implement inline following the full Worker Protocol.
+
 - If more than one row is `active`: stop and report inconsistency.
 
 ### S6 - Loop
@@ -88,8 +100,13 @@ The orchestrator copies this section into each subagent task prompt.
 - Complete the entire feature spec in one run.
 - Never ask to rerun `/pspec.implement`.
 - If a check or test fails, batch-fix all errors, rerun, keep going.
-- Only stop early for: missing section, unresolvable dependency, environment issue.
+- Only stop early for: missing section, unresolvable dependency, environment issue, or context limit.
 - Update PROGRESS.md before code edits and after every major checkpoint.
+- Monitor your working context. If you sense you are running low on context (approaching output limits, losing track of earlier steps, or producing increasingly terse output):
+  a. Immediately checkpoint: write state block and update PROGRESS.md.
+  b. Return a `partial` result with `phase_reached` set to your current phase.
+  c. Do NOT attempt to rush through remaining work — partial with saved state is better than empty.
+- Minimize context consumption: read files on demand, do not re-read files already parsed, keep tool outputs concise.
 
 ### Fail-Closed Rules
 
@@ -104,6 +121,46 @@ Workers must follow these rules at all times. Violating any rule is a false posi
 4. **skipped-with-reason for blocked validates.** If a validate depends on an action in `state.failed`, skip the validate, log it in `state.evidence` as `skipped-with-reason` along with the failed action id, and do not check the corresponding Done item.
 
 5. **Attestation before done.** Before marking a spec done at W6, write an attestation in the PROGRESS.md Active section listing each Done item, its mapped validate ids, and the evidence summary for each validate. Only then may the spec status be set to `done`.
+
+### Checkpointing
+
+The worker must persist state to disk at every phase boundary. This ensures that if the worker terminates unexpectedly, progress is recoverable.
+
+1. After W1 (Load): write state block with `status: running`, `started_at`.
+2. After W2 (Decisions): write state block with resolved `decisions`.
+3. After each action in W3: write state block with updated `completed`/`failed`/`artifacts`.
+4. After W3 (all actions): update Active section in PROGRESS.md (phase `W3`).
+5. After each validate in W5: write state block with updated `evidence`.
+6. After W6 (Complete): final state write.
+
+Each checkpoint writes the feature spec's `state` block to disk and updates the Active section in PROGRESS.md with: current phase, last completed step, and ISO timestamp.
+
+If the worker is approaching its context limit, it must immediately:
+a. Write the current state block to the feature spec file.
+b. Update PROGRESS.md Active section with phase, last step, and note: "context limit — partial progress saved".
+c. Return the structured result (see Return Contract) with `status: partial`.
+
+### Return Contract
+
+The worker must return a result in this exact structure as its final message. This is mandatory — returning empty, returning only prose, or omitting fields is a protocol violation.
+
+```yaml
+result:
+  status: done | partial | failed | blocked
+  spec_id: <NN>
+  spec_title: <title>
+  phase_reached: W1 | W2 | W3 | W4 | W5 | W6
+  actions_completed: [<action-ids>]
+  actions_failed: [<action-ids>]
+  validates_passed: [<validate-ids>]
+  validates_failed: [<validate-ids>]
+  files_changed: [<paths>]
+  coverage_addressed: [<AC-*/EC-* ids>]
+  blockers: [<description if any>]
+  note: <one-line summary>
+```
+
+**`partial` status**: The worker completed some but not all work. This is acceptable when the worker hits a context limit or encounters a non-fatal issue. The orchestrator will re-dispatch the spec.
 
 ### Block Parsing
 
@@ -252,11 +309,13 @@ Gate: all validates pass, all review passes complete.
 
 ## Constraints
 
-- Orchestrator coordinates subagents; it does not implement feature specs directly
+- Orchestrator coordinates subagents; it does not implement feature specs directly for the first 3 dispatch attempts. If a subagent fails, returns empty, or returns partial, the orchestrator must re-dispatch. After 3 failed dispatches for the same spec, the orchestrator may fall back to direct implementation — but must follow the full Worker Protocol (W1–W6) inline, never skip validates or checkpointing. Never fall back to writing code, running tests, or creating files itself before exhausting 3 retries.
 - Only one subagent active at a time; wait for return before spawning the next
 - Subagent reads all files from disk independently; orchestrator passes paths only
 - PROGRESS.md is the handoff contract; subagent must update it before returning
 - Orchestrator validates PROGRESS.md state after each subagent returns
+- The orchestrator MUST read the state block from disk after every subagent return, not rely solely on the subagent's reported result
+- Before returning for any reason (success, failure, context limit, or unexpected condition), the worker MUST write the current state block to the feature spec file and update PROGRESS.md Active section. Returning without persisting state is a protocol violation.
 - Process one feature spec per subagent; do not batch
 - Resume the existing `active` spec before any new `pending` item
 - Execute in id order, respecting depends_on
