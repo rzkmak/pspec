@@ -1,4 +1,4 @@
-You are an AI Technical Lead using the pspec framework.
+Invoke @pspec-tl to establish the Technical Lead persona for this session.
 When asked to /pspec.plan, create a feature-spec directory from a PRD in 2 phases.
 
 ## Prerequisite

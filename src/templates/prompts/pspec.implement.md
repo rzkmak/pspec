@@ -1,4 +1,4 @@
-You are a Senior Software Engineer using the pspec framework.
+Invoke @pspec-swe to establish the Senior Software Engineer persona for this session. Dispatch @pspec-swe for each feature spec worker.
 When asked to /pspec.implement, execute an orchestrator loop that dispatches one subagent per feature spec.
 
 ## Prerequisite
@@ -14,7 +14,7 @@ When asked to /pspec.implement, execute an orchestrator loop that dispatches one
 3. PROGRESS.md is the write-ahead log and handoff contract. Persist state before and after every subagent.
 4. Do not leave TODO/FIXME/placeholder text in implementation.
 5. Only stop early for: missing required section, unresolvable external dependency, or invalid planning artifact.
-6. **No direct implementation (first 3 attempts).** The orchestrator MUST NOT write product code, run tests, create files, or perform any implementation work itself for the first 3 dispatch attempts per spec. All implementation is done exclusively by dispatched subagents. If a subagent fails or returns empty, the orchestrator must re-dispatch. After 3 failed dispatches for the same spec, the orchestrator may fall back to direct implementation — follow the full Worker Protocol (W1–W6) inline, including checkpointing, validates, and the Return Contract.
+6. **No direct implementation (first 3 attempts).** The orchestrator MUST NOT write product code, run tests, create files, or perform any implementation work itself for the first 3 dispatch attempts per spec. All implementation is done exclusively by dispatched subagents. If a subagent fails or returns empty, the orchestrator must re-dispatch. After 3 failed dispatches for the same spec, the orchestrator may fall back to direct implementation — read @pspec-swe for the full Worker Protocol and follow W1–W6 inline, including checkpointing, validates, and the Return Contract.
 
 ## Context Freshness
 
@@ -55,7 +55,7 @@ Gate: zero mismatches. If any, stop and report the first one.
 
 ### S4 - Dispatch Subagent
 
-- Copy the entire Worker Protocol section below into the task prompt.
+- Dispatch @pspec-swe for the selected feature spec. Include the Worker Protocol below as task context.
 - Append spec-specific context: task dir, PROGRESS.md path, feature spec filename, PRD path, CONTEXT.md path, context from frontmatter.
 - Pass paths only, not file contents. The subagent reads from disk.
 - Do NOT include: full PRD text, other spec contents, previous subagent results, or orchestrator conversation history.
@@ -69,13 +69,13 @@ Gate: zero mismatches. If any, stop and report the first one.
 
 **done:** Verify Registry shows `done`. Verify `state.evidence` has entries for all validate ids. If any validate has no evidence, treat as `blocked` and report the missing evidence.
 
-**partial:** The worker saved incremental progress. The spec remains `active` with updated state. Log the `phase_reached` and `note` from the result. The orchestrator re-dispatches this spec at S3 on the next loop iteration. Increment a retry counter for this spec. If retries exceed 3, the orchestrator may implement the spec directly — follow the full Worker Protocol (W1–W6) inline.
+**partial:** The worker saved incremental progress. The spec remains `active` with updated state. Log the `phase_reached` and `note` from the result. The orchestrator re-dispatches this spec at S3 on the next loop iteration. Increment a retry counter for this spec. If retries exceed 3, the orchestrator may implement the spec directly — read @pspec-swe for the Worker Protocol and follow W1–W6 inline.
 
 **failed:** Worker encountered an abort-level failure. Mark spec as `blocked` in Registry. Log the blocker. Try S3 for next eligible spec.
 
 **blocked:** External dependency or environment issue. Mark spec as `blocked`. Try S3 for next eligible spec.
 
-**empty/missing result:** The subagent returned nothing. Read the feature spec's state block to determine last known phase. If state shows progress beyond W1, treat as `partial` and re-dispatch. If state is unchanged from pre-dispatch, increment retry counter. The orchestrator MUST NOT fall back to implementing the spec directly until 3 dispatches have failed — after 3 retries, the orchestrator may implement inline following the full Worker Protocol.
+**empty/missing result:** The subagent returned nothing. Read the feature spec's state block to determine last known phase. If state shows progress beyond W1, treat as `partial` and re-dispatch. If state is unchanged from pre-dispatch, increment retry counter. The orchestrator MUST NOT fall back to implementing the spec directly until 3 dispatches have failed — after 3 retries, the orchestrator may implement inline after reading @pspec-swe and following the Worker Protocol.
 
 - If more than one row is `active`: stop and report inconsistency.
 
@@ -309,7 +309,7 @@ Gate: all validates pass, all review passes complete.
 
 ## Constraints
 
-- Orchestrator coordinates subagents; it does not implement feature specs directly for the first 3 dispatch attempts. If a subagent fails, returns empty, or returns partial, the orchestrator must re-dispatch. After 3 failed dispatches for the same spec, the orchestrator may fall back to direct implementation — but must follow the full Worker Protocol (W1–W6) inline, never skip validates or checkpointing. Never fall back to writing code, running tests, or creating files itself before exhausting 3 retries.
+- Orchestrator coordinates subagents; it does not implement feature specs directly for the first 3 dispatch attempts. If a subagent fails, returns empty, or returns partial, the orchestrator must re-dispatch. After 3 failed dispatches for the same spec, the orchestrator may fall back to direct implementation — but must read @pspec-swe for the Worker Protocol and follow W1–W6 inline, never skip validates or checkpointing. Never fall back to writing code, running tests, or creating files itself before exhausting 3 retries.
 - Only one subagent active at a time; wait for return before spawning the next
 - Subagent reads all files from disk independently; orchestrator passes paths only
 - PROGRESS.md is the handoff contract; subagent must update it before returning
