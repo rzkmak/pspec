@@ -21,6 +21,34 @@ describe('templates', () => {
       expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new PRD"');
       expect(specTemplate?.content).toContain('You are an AI Product Manager using the pspec framework.');
     });
+
+    it('should include subagent files', () => {
+      const claudeTemplates = getTemplates('claude');
+      const subagentDirs = claudeTemplates.filter(t => t.dir === '.claude/agents');
+      expect(subagentDirs.length).toBe(4);
+      
+      const pmAgent = claudeTemplates.find(t => t.file === 'pspec-pm.md');
+      expect(pmAgent).toBeDefined();
+      expect(pmAgent?.dir).toBe('.claude/agents');
+      expect(pmAgent?.content).toContain('name: pspec-pm');
+      expect(pmAgent?.content).toContain('AI Product Manager');
+      expect(pmAgent?.content).toContain('description:');
+      
+      const tlAgent = claudeTemplates.find(t => t.file === 'pspec-tl.md');
+      expect(tlAgent).toBeDefined();
+      expect(tlAgent?.content).toContain('name: pspec-tl');
+      expect(tlAgent?.content).toContain('AI Technical Lead');
+      
+      const sweAgent = claudeTemplates.find(t => t.file === 'pspec-swe.md');
+      expect(sweAgent).toBeDefined();
+      expect(sweAgent?.content).toContain('name: pspec-swe');
+      expect(sweAgent?.content).toContain('Senior Software Engineer');
+      
+      const qaAgent = claudeTemplates.find(t => t.file === 'pspec-qa.md');
+      expect(qaAgent).toBeDefined();
+      expect(qaAgent?.content).toContain('name: pspec-qa');
+      expect(qaAgent?.content).toContain('AI Planning Auditor');
+    });
   });
 
   describe('gemini templates', () => {
@@ -38,6 +66,16 @@ describe('templates', () => {
       expect(auditTemplate).toBeDefined();
       expect(auditTemplate?.content).toContain('description = "Audit and sync feature specs with the PRD"');
       expect(auditTemplate?.content).toContain('You are an AI Planning Auditor using the pspec framework.');
+    });
+
+    it('should include subagent files with kind local', () => {
+      const geminiTemplates = getTemplates('gemini');
+      const pmAgent = geminiTemplates.find(t => t.file === 'pspec-pm.md' && t.dir === '.gemini/agents');
+      expect(pmAgent).toBeDefined();
+      expect(pmAgent?.content).toContain('name: pspec-pm');
+      expect(pmAgent?.content).toContain('kind: local');
+      expect(pmAgent?.content).toContain('tools:');
+      expect(pmAgent?.content).toContain('AI Product Manager');
     });
   });
 
@@ -74,6 +112,14 @@ describe('templates', () => {
       expect(auditCommandTemplate?.dir).toBe('.cursor/commands');
       expect(auditCommandTemplate?.content).toContain('description: "Audit and sync feature specs with the PRD"');
     });
+
+    it('should include subagent files with name and description', () => {
+      const cursorTemplates = getTemplates('cursor');
+      const sweAgent = cursorTemplates.find(t => t.file === 'pspec-swe.md' && t.dir === '.cursor/agents');
+      expect(sweAgent).toBeDefined();
+      expect(sweAgent?.content).toContain('name: pspec-swe');
+      expect(sweAgent?.content).toContain('Senior Software Engineer');
+    });
   });
 
   describe('debug templates', () => {
@@ -109,6 +155,22 @@ describe('templates', () => {
       expect(skillTemplate?.content).toContain('name: pspec');
       expect(skillTemplate?.content).toContain('Spec-Driven Development (SDD) toolkit');
     });
+
+    it('should not include subagent files', () => {
+      const antigravityTemplates = getTemplates('antigravity');
+      const agentDirs = antigravityTemplates.filter(t => t.dir === '.agent/agents');
+      expect(agentDirs.length).toBe(0);
+    });
+  });
+
+  describe('kilo templates', () => {
+    it('should include subagent files with mode subagent', () => {
+      const kiloTemplates = getTemplates('kilo');
+      const sweAgent = kiloTemplates.find(t => t.file === 'pspec-swe.md' && t.dir === '.kilo/agents');
+      expect(sweAgent).toBeDefined();
+      expect(sweAgent?.content).toContain('mode: subagent');
+      expect(sweAgent?.content).toContain('Senior Software Engineer');
+    });
   });
 
   describe('getTemplates', () => {
@@ -116,23 +178,88 @@ describe('templates', () => {
       expect(getTemplates('unknown')).toEqual([]);
     });
 
-    it('should return the correct templates for a known agent', () => {
-      const t = getTemplates('opencode');
-      expect(t.length).toBe(5);
-      expect(t[0].file).toBe('pspec.spec.md');
-      expect(t[0].content).toContain('AI Product Manager');
+    it('should return the correct template count for each agent', () => {
+      expect(getTemplates('opencode').length).toBe(9);
+      expect(getTemplates('claude').length).toBe(9);
+      expect(getTemplates('gemini').length).toBe(9);
+      expect(getTemplates('cursor').length).toBe(14);
+      expect(getTemplates('antigravity').length).toBe(6);
+      expect(getTemplates('kilo').length).toBe(9);
     });
 
     it('should return both rule and command templates for cursor', () => {
       const t = getTemplates('cursor');
-      expect(t.length).toBe(10);
       const dirs = t.map(template => template.dir);
       expect(dirs).toContain('.cursor/rules');
       expect(dirs).toContain('.cursor/commands');
+      expect(dirs).toContain('.cursor/agents');
+    });
+
+    it('should include subagent templates with correct directories for each agent', () => {
+      const agentDirs: Record<string, string> = {
+        opencode: '.opencode/agents',
+        claude: '.claude/agents',
+        gemini: '.gemini/agents',
+        cursor: '.cursor/agents',
+        kilo: '.kilo/agents'
+      };
+
+      Object.entries(agentDirs).forEach(([agent, expectedDir]) => {
+        const t = getTemplates(agent);
+        const agentTemplates = t.filter(temp => temp.dir === expectedDir);
+        expect(agentTemplates.length).toBe(4);
+        const ids = agentTemplates.map(a => a.file);
+        expect(ids).toContain('pspec-pm.md');
+        expect(ids).toContain('pspec-tl.md');
+        expect(ids).toContain('pspec-swe.md');
+        expect(ids).toContain('pspec-qa.md');
+      });
+    });
+
+    it('should generate subagents with persona-only prompts', () => {
+      const opencodeTemplates = getTemplates('opencode');
+      const processTerms = ['## Phase', '## Worker Protocol', 'W1 - Load', 'Checkpointing', 'Return Contract'];
+
+      const pmAgent = opencodeTemplates.find(t => t.file === 'pspec-pm.md' && t.dir === '.opencode/agents');
+      expect(pmAgent).toBeDefined();
+      expect(pmAgent?.content).toContain('AI Product Manager');
+      expect(pmAgent?.content).toContain('user outcomes');
+      expect(pmAgent?.content).toContain('acceptance criteria');
+
+      const tlAgent = opencodeTemplates.find(t => t.file === 'pspec-tl.md' && t.dir === '.opencode/agents');
+      expect(tlAgent).toBeDefined();
+      expect(tlAgent?.content).toContain('AI Technical Lead');
+      expect(tlAgent?.content).toContain('system boundaries');
+      expect(tlAgent?.content).toContain('contracts');
+
+      const sweAgent = opencodeTemplates.find(t => t.file === 'pspec-swe.md' && t.dir === '.opencode/agents');
+      expect(sweAgent).toBeDefined();
+      expect(sweAgent?.content).toContain('Senior Software Engineer');
+      expect(sweAgent?.content).toContain('small correct changes');
+      expect(sweAgent?.content).toContain('behavioral regressions');
+
+      const qaAgent = opencodeTemplates.find(t => t.file === 'pspec-qa.md' && t.dir === '.opencode/agents');
+      expect(qaAgent).toBeDefined();
+      expect(qaAgent?.content).toContain('AI Planning Auditor');
+      expect(qaAgent?.content).toContain('requirement coverage');
+      expect(qaAgent?.content).toContain('stale references');
+
+      [pmAgent, tlAgent, sweAgent, qaAgent].forEach(agent => {
+        processTerms.forEach(term => expect(agent?.content).not.toContain(term));
+      });
+    });
+
+    it('should generate opencode subagents with mode subagent', () => {
+      const opencodeTemplates = getTemplates('opencode');
+      const subagents = opencodeTemplates.filter(t => t.dir === '.opencode/agents');
+      subagents.forEach(sa => {
+        expect(sa.content).toContain('mode: subagent');
+        expect(sa.content).toContain('description:');
+      });
     });
 
     it('should keep command prompts workflow-aligned', () => {
-      const templates = getTemplates('opencode');
+      const templates = getTemplates('claude');
       const specs = [
         {
           file: 'pspec.spec.md',
@@ -158,7 +285,8 @@ describe('templates', () => {
             '<epoch-ms>-<slug>.md',
             '/pspec.plan .pspec/specs/',
             'CONTEXT.md',
-            'primary source of truth'
+            'primary source of truth',
+            '@pspec-pm'
           ],
           forbidden: [
             'Ask 0-3 targeted questions',
@@ -208,7 +336,8 @@ describe('templates', () => {
             'Deny-by-default',
             'Read `.pspec/CONTEXT.md`',
             'Merge `.pspec/CONTEXT.md`',
-            'evidence'
+            'evidence',
+            '@pspec-tl'
           ],
           forbidden: [
             'parallelizable',
@@ -257,7 +386,8 @@ describe('templates', () => {
             'unmapped requirement',
             'at least one spec',
             'stale requirement references',
-            'create new pending specs'
+            'create new pending specs',
+            '@pspec-qa'
           ],
           forbidden: [
             'parallelizable',
@@ -331,7 +461,8 @@ describe('templates', () => {
             'MUST NOT write product code',
             'MUST NOT fall back to implementing the spec directly until 3 dispatches',
             'After 3 failed dispatches',
-            'follow the full Worker Protocol'
+            'read @pspec-swe',
+            '@pspec-swe'
           ],
           forbidden: [
             'parallelizable',
@@ -358,7 +489,8 @@ describe('templates', () => {
             'Never claim fixed unless reproduction or regression check passes',
             'state block',
             'failed actions',
-            '.pspec/CONTEXT.md'
+            '.pspec/CONTEXT.md',
+            '@pspec-swe'
           ],
           forbidden: [
             'grep_search',
