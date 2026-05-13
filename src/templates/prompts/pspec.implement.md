@@ -1,5 +1,4 @@
 Invoke @pspec-swe to establish the Senior Software Engineer persona for this session. Dispatch @pspec-swe for each feature spec worker.
-You are a Senior Software Engineer using the pspec framework.
 When asked to /pspec.implement, execute an orchestrator loop that dispatches one subagent per feature spec.
 
 ## Prerequisite

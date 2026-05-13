@@ -1,4 +1,3 @@
-You are an AI Planning Auditor using the pspec framework.
 Invoke @pspec-qa to establish the Planning Auditor persona for this session.
 When asked to /pspec.audit, audit and sync a feature-spec directory against its PRD.
 This command updates planning artifacts only. It must not implement product code.

@@ -19,7 +19,7 @@ describe('templates', () => {
       expect(specTemplate?.dir).toBe('.claude/commands');
       expect(specTemplate?.content).toContain('---');
       expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new PRD"');
-      expect(specTemplate?.content).toContain('You are an AI Product Manager using the pspec framework.');
+      expect(specTemplate?.content).toContain('@pspec-pm');
     });
 
     it('should include subagent files', () => {
@@ -61,11 +61,11 @@ describe('templates', () => {
       expect(planTemplate?.dir).toBe('.gemini/commands');
       expect(planTemplate?.content).toContain('description = "Generate feature specs for an existing PRD"');
       expect(planTemplate?.content).toContain('prompt = """');
-      expect(planTemplate?.content).toContain('You are an AI Technical Lead using the pspec framework.');
+      expect(planTemplate?.content).toContain('@pspec-tl');
 
       expect(auditTemplate).toBeDefined();
       expect(auditTemplate?.content).toContain('description = "Audit and sync feature specs with the PRD"');
-      expect(auditTemplate?.content).toContain('You are an AI Planning Auditor using the pspec framework.');
+      expect(auditTemplate?.content).toContain('@pspec-qa');
     });
 
     it('should include subagent files with kind local', () => {
@@ -98,15 +98,15 @@ describe('templates', () => {
       expect(implementTemplate).toBeDefined();
       expect(implementTemplate?.dir).toBe('.cursor/rules');
       expect(implementTemplate?.content).toContain('globs: "*"');
-      expect(implementTemplate?.content).toContain('You are a Senior Software Engineer using the pspec framework.');
+      expect(implementTemplate?.content).toContain('@pspec-swe');
 
       expect(implementCommandTemplate).toBeDefined();
       expect(implementCommandTemplate?.dir).toBe('.cursor/commands');
       expect(implementCommandTemplate?.content).toContain('description: "Implement planned feature specs"');
-      expect(implementCommandTemplate?.content).toContain('You are a Senior Software Engineer using the pspec framework.');
+      expect(implementCommandTemplate?.content).toContain('@pspec-swe');
 
       expect(auditTemplate).toBeDefined();
-      expect(auditTemplate?.content).toContain('You are an AI Planning Auditor using the pspec framework.');
+      expect(auditTemplate?.content).toContain('@pspec-qa');
 
       expect(auditCommandTemplate).toBeDefined();
       expect(auditCommandTemplate?.dir).toBe('.cursor/commands');
@@ -130,7 +130,7 @@ describe('templates', () => {
       
       expect(debugTemplate).toBeDefined();
       expect(debugTemplate?.content).toContain('description = "Investigate and resolve errors in the project"');
-      expect(debugTemplate?.content).toContain('You are an AI Debugging Expert using the pspec framework.');
+      expect(debugTemplate?.content).toContain('@pspec-swe');
 
       expect(auditTemplate).toBeDefined();
       expect(auditTemplate?.content).toContain('Audit and sync feature specs with the PRD');
@@ -148,7 +148,7 @@ describe('templates', () => {
       expect(specTemplate?.content).toContain('---');
       expect(specTemplate?.content).toContain('description: "Start an inquiry to create a new PRD"');
       expect(specTemplate?.content).toContain('# Pspec spec');
-      expect(specTemplate?.content).toContain('You are an AI Product Manager using the pspec framework.');
+      expect(specTemplate?.content).toContain('@pspec-pm');
 
       expect(skillTemplate).toBeDefined();
       expect(skillTemplate?.dir).toBe('.agent/skills/pspec');
@@ -265,7 +265,7 @@ describe('templates', () => {
           file: 'pspec.spec.md',
           required: [
             'Product Requirements Document (PRD)',
-            'You are an AI Product Manager using the pspec framework.',
+            '@pspec-pm',
             'Ask questions only in the first response',
             'finish the full PRD in one pass',
             'Do not stop mid-draft',
